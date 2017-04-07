@@ -18,7 +18,6 @@
    :bordeaux-threads
    :cffi
    :cffi-errno
-   :cffi-posix
    :cl-debug
    :common-lisp)
   (:export

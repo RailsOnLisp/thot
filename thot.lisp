@@ -282,6 +282,7 @@ The requested url ~S was not found on this server."
 	   (when (debug-p (or :thot :http))
 	     (format t "~&~S -> ~S~%" handler-func handler))
 	   (funcall handler)
+           (flush (request-stream))
 	   (return))))
     (if (string-equal "keep-alive" (request-header 'connection))
         :keep-alive

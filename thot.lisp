@@ -12,11 +12,11 @@
 
 (defclass request ()
   ((stream :initarg :stream
-	   :reader request-stream%
-	   :type stream)
+           :reader request-stream%
+           :type stream)
    (method :initarg :method
-	   :accessor request-method%
-	   :type symbol)
+           :accessor request-method%
+           :type symbol)
    (target :initarg :target
            :accessor request-target%
            :type string)
@@ -24,13 +24,13 @@
                  :accessor request-http-version%
                  :type string)
    (headers :initform (make-hash-table :test 'equalp :size 32)
-	    :reader request-headers%
-	    :type hash-table)
+            :reader request-headers%
+            :type hash-table)
    (uri :accessor request-uri%
-	:type string)
+        :type string)
    (query :initform nil
-	  :accessor request-query%
-	  :type string)))
+          :accessor request-query%
+          :type string)))
 
 (defvar *request*)
 
@@ -57,15 +57,15 @@
 (defun split-request-uri-and-query (request)
   (declare (type request request))
   (let* ((target (request-target% request))
-	 (target-? (position #\? target))
-	 (uri (if target-?
-		  (subseq target 0 target-?)
-		  target))
-	 (query (if target-?
-		    (subseq target target-?)
-		    nil)))
+         (target-? (position #\? target))
+         (uri (if target-?
+                  (subseq target 0 target-?)
+                  target))
+         (query (if target-?
+                    (subseq target target-?)
+                    nil)))
     (setf (request-uri% request) uri
-	  (request-query% request) query)))
+          (request-query% request) query)))
 
 (defun request-uri (&optional (request *request*))
   (declare (type request request))
@@ -180,11 +180,11 @@
 
 (defclass reply ()
   ((status :initform nil
-	   :accessor reply-status%)
+           :accessor reply-status%)
    (headers :initform nil
-	    :accessor reply-headers%)
+            :accessor reply-headers%)
    (headers-sent :initform nil
-		 :accessor reply-headers-sent%
+                 :accessor reply-headers-sent%
                  :type boolean)))
 
 (defvar *reply*)
@@ -236,12 +236,12 @@
     (status "200 OK"))
   (let ((headers (reply-headers)))
     (if (endp headers)
-	(setf (reply-headers) (list line))
-	(loop
-	   (when (endp (rest headers))
-	     (setf (rest headers) (list line))
-	     (return))
-	   (pop headers))))
+        (setf (reply-headers) (list line))
+        (loop
+           (when (endp (rest headers))
+             (setf (rest headers) (list line))
+             (return))
+           (pop headers))))
   (let ((stream (request-stream)))
     (write-sequence stream line)
     (write-sequence stream +crlf+)))
@@ -261,7 +261,7 @@
   (content (format nil "404 Not found
   
 The requested url ~S was not found on this server."
-		   (request-target))))
+                   (request-target))))
 
 (defun 404-not-found-handler ()
   '404-not-found)
@@ -272,18 +272,18 @@ The requested url ~S was not found on this server."
 (defun request-cont (request)
   (let ((handlers *url-handlers*)
         (*request* request)
-	(*reply* (make-instance 'reply)))
+        (*reply* (make-instance 'reply)))
     (loop
        (when (endp handlers)
-	 (return))
+         (return))
        (let* ((handler-func (pop handlers))
-	      (handler (funcall handler-func)))
-	 (when handler
-	   (when (debug-p (or :thot :http))
-	     (format t "~&~S -> ~S~%" handler-func handler))
-	   (funcall handler)
+              (handler (funcall handler-func)))
+         (when handler
+           (when (debug-p (or :thot :http))
+             (format t "~&~S -> ~S~%" handler-func handler))
+           (funcall handler)
            (flush (request-stream))
-	   (return))))
+           (return))))
     (if (string-equal "keep-alive" (request-header 'connection))
         :keep-alive
         nil)))

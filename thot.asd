@@ -8,12 +8,12 @@
 
 (defsystem "thot"
   :depends-on ("babel"
-	       "bordeaux-queue"
-	       "bordeaux-set"
-	       "bordeaux-threads"
+               "bordeaux-queue"
+               "bordeaux-set"
+               "bordeaux-threads"
                "babel-stream"
                "cffi-socket"
-	       "cl-debug"
+               "cl-debug"
                "cl-stream"
                "fd-stream")
   :components

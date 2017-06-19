@@ -22,14 +22,14 @@
      (when (<= n (length *worker-threads*))
        (return))
      (let ((thread (bordeaux-threads:make-thread 'worker-thread
-						 :name "worker")))
+                                                 :name "worker")))
        (push thread *worker-threads*))))
 
 (defun join-worker-threads ()
   (setq *stop* t)
   (bordeaux-set:set-each (lambda (sockfd)
-			   (cffi-socket:shutdown sockfd t t))
-			 *worker-sockfds*)
+                           (cffi-socket:shutdown sockfd t t))
+                         *worker-sockfds*)
   (loop
      (when (endp *worker-threads*)
        (return))
@@ -38,7 +38,7 @@
 
 (defmacro with-worker-threads (count &body body)
   `(let ((*worker-threads* ())
-	 (*worker-sockfds* (make-instance 'bordeaux-set:set)))
+         (*worker-sockfds* (make-instance 'bordeaux-set:set)))
      (init-worker-threads ,count)
      (unwind-protect (progn ,@body)
        (join-worker-threads))))

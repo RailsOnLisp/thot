@@ -47,7 +47,7 @@
   (declare (type (unsigned-byte 31) fd))
   (setq *stop* nil
         *listen-fd* fd)
-  (with-worker-threads *init-threads*
+  (with-worker-threads (1- *init-threads*)
     (worker-thread)))
 
 (when bordeaux-threads:*supports-threads-p*

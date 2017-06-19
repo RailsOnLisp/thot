@@ -109,7 +109,7 @@
        ,@body)))
 
 (defun request-reader (stream cont)
-  (let ((*request* (make-instance 'request))
+  (let ((request (make-instance 'request :stream stream))
         (buffer (string-output-stream))
         (name "")
         (value ""))
@@ -119,19 +119,19 @@
       (with-readers-for stream
           ((method (char)
              (cond ((char= #\Space char)
-                    (setf (request-method% *request*) (get-buffer))
+                    (setf (request-method% request) (get-buffer))
                     (target))
                    (t (write buffer char)
                       (method))))
            (target (char)
              (cond ((char= #\Space char)
-                    (setf (request-target% *request*) (get-buffer))
+                    (setf (request-target% request) (get-buffer))
                     (version))
                    (t (write buffer char)
                       (target))))
            (version (char)
              (cond ((char= #\Return char)
-                    (setf (request-http-version% *request*) (get-buffer))
+                    (setf (request-http-version% request) (get-buffer))
                     (version-lf))
                    (t (write buffer char)
                       (version))))
@@ -139,9 +139,9 @@
              (cond ((char= #\Newline char)
                     (when (debug-p (or :thot :http))
                       (format t "~&thot: ~A ~A ~A~%"
-                              (request-method)
-                              (request-target)
-                              (request-http-version)))
+                              (request-method% request)
+                              (request-target% request)
+                              (request-http-version% request)))
                     (next-header))
                    (t (error "Missing request line LF"))))
            (next-header (char)
@@ -168,11 +168,11 @@
              (cond ((char= #\Newline char)
                     (when (debug-p (or :thot :http))
                       (format t "~&thot: ~A: ~A~%" name value))
-                    (setf (request-header name *request*) value)
+                    (setf (request-header name request) value)
                     (next-header))
                    (t (error "Missing header LF"))))
            (end-of-headers (char)
-             (cond ((char= #\Newline char) (funcall cont))
+             (cond ((char= #\Newline char) (funcall cont request))
                    (t (error "Missing end of headers LF")))))
         #'method))))
 
@@ -269,8 +269,9 @@ The requested url ~S was not found on this server."
 (defvar *url-handlers*
   '(404-not-found-handler))
 
-(defun handle-request ()
+(defun request-cont (request)
   (let ((handlers *url-handlers*)
+        (*request* request)
 	(*reply* (make-instance 'reply)))
     (loop
        (when (endp handlers)
@@ -289,13 +290,12 @@ The requested url ~S was not found on this server."
 (defvar *stop* nil)
 
 (defun request-loop (stream)
-  (ignore-errors
-    (loop
-       (when *stop*
-	 (return))
-       (unless (eq :keep-alive
-                   (funcall (request-reader stream #'handle-request)))
-         (return)))))
+  (loop
+     (when *stop*
+       (return))
+     (unless (eq :keep-alive
+                 (funcall (request-reader stream #'request-cont)))
+       (return))))
 
 (defvar *acceptor-loop*)
 

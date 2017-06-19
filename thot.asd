@@ -8,10 +8,16 @@
 
 (defsystem "thot"
   :depends-on ("babel"
+	       "bordeaux-queue"
+	       "bordeaux-set"
 	       "bordeaux-threads"
-	       "cffi-posix"
-	       "cffi-sockets-flexi"
-	       "cl-debug")
+               "babel-stream"
+               "cffi-socket"
+	       "cl-debug"
+               "cl-stream"
+               "fd-stream")
   :components
   ((:file "package")
-   (:file "thot" :depends-on ("package"))))
+   (:file "thot" :depends-on ("package"))
+   (:file "thot-single" :depends-on ("thot"))
+   (:file "thot-threaded" :depends-on ("thot-single"))))

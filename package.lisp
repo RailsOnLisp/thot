@@ -15,11 +15,15 @@
 
 (defpackage :thot
   (:use
+   :babel-stream
    :bordeaux-threads
    :cffi
    :cffi-errno
    :cl-debug
+   :cl-stream
+   :fd-stream
    :common-lisp)
+  #.(cl-stream:shadowing-import-from)
   (:export
    #:request
    #:*request*
@@ -41,4 +45,4 @@
    #:end-headers
    #:content
    #:start
-   #:stop))
+   #:start-threaded))

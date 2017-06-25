@@ -371,7 +371,7 @@ The requested url ~S was not found on this server."
            (when (debug-p (or :thot :http))
              (format t "~&~S -> ~S~%" handler-func handler))
            (funcall handler)
-           (flush (request-stream))
+           (flush (request-stream% request))
            (return))))
     (if (string-equal "keep-alive" (request-header 'connection))
         :keep-alive
@@ -391,10 +391,21 @@ The requested url ~S was not found on this server."
 
 (defvar *acceptor-loop*)
 
-(defun start (&key (address "0.0.0.0") (port 8000))
-  (cffi-socket:with-socket (fd cffi-socket:+af-inet+
-                               cffi-socket:+sock-stream+
-                               0)
-    (cffi-socket:bind-inet fd address port)
-    (cffi-socket:listen fd 128)
-    (funcall *acceptor-loop* fd)))
+(defvar *host*)
+
+(defvar *port*)
+
+(defun start (&key (host "0.0.0.0") (port 8000))
+  (setq *stop* nil)
+  (let ((*host* host)
+        (*port* port))
+    (socket:with-socket (fd socket:+af-inet+
+                            socket:+sock-stream+
+                            0)
+      (socket:bind-inet fd host port)
+      (socket:listen fd 128)
+      (funcall *acceptor-loop* fd))))
+
+(defun set-nonblocking (fd)
+  (let ((flags (fcntl:getfl fd)))
+    (fcntl:setfl fd (logior fcntl:+o-nonblock+ flags))))

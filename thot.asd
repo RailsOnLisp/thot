@@ -12,6 +12,7 @@
                "bordeaux-set"
                "bordeaux-threads"
                "babel-stream"
+               "cffi-epoll"
                "cffi-socket"
                "cl-debug"
                "cl-stream"

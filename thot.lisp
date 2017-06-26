@@ -404,7 +404,7 @@ The requested url ~S was not found on this server."
                             0)
       (socket:bind-inet fd host port)
       (socket:listen fd 128)
-      (funcall *acceptor-loop* fd))))
+      (funcall (funcall *acceptor-loop* fd)))))
 
 (defun set-nonblocking (fd)
   (let ((flags (fcntl:getfl fd)))

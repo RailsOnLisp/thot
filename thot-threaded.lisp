@@ -1,60 +1,46 @@
 
 (in-package :thot)
 
-(defvar *listen-fds*)
-
-(defun worker-thread (fd &optional dup)
-  (let ((listen-fd (if dup (unistd:dup fd) fd)))
-    (when dup
-      (pushnew listen-fd *listen-fds*))
-    (labels ((worker-thread-fd ()
-               ;;(format t "~&WORKER THREAD~%")
-               (unwind-protect
-                    (loop
-                       (when *stop*
-                         (return))
-                       (ignore-errors
-                         (unistd:with-selected (`(,listen-fd) () () 1)
-                             (readable writable errors)
-                           (when readable
-                             (socket:with-accept (clientfd) listen-fd
-                               (with-stream (stream (babel-io-stream
-                                                     (fd-io-stream clientfd)))
-                                 (request-loop stream)))))))
-                 (when dup
-                   (unistd:close listen-fd)))))
-      #'worker-thread-fd)))
+(defvar *worker-thread-for-fd*)
 
 (defparameter *init-threads* 8)
 
 (defun make-worker-threads (fd n)
-  (let ((threads ()))
+  (let ((threads ())
+        (listen-fds ()))
     (dotimes (i n)
-      (push (bordeaux-threads:make-thread
-             (worker-thread fd t)
-             :name "worker")
-            threads))
-    threads))
+      (let ((thread-fd (unistd:dup fd)))
+        (push thread-fd listen-fds)
+        (push (bordeaux-threads:make-thread
+               (funcall *worker-thread-for-fd* thread-fd)
+               :name "worker")
+              threads)))
+    (values threads listen-fds)))
 
-(defun join-worker-threads (threads)
+(defun join-worker-threads (threads listen-fds)
   (setq *stop* t)
+  (dolist (fd listen-fds)
+    (unistd:close fd))
   (dolist (thread threads)
     (bordeaux-threads:join-thread thread)))
 
 (defmacro with-worker-threads ((fd count) &body body)
-  (let ((threads (gensym "THREADS-")))
-    `(let* ((*listen-fds* ())
-            (,threads (make-worker-threads ,fd ,count)))
+  (let ((threads (gensym "THREADS-"))
+        (listen-fds (gensym "LISTEN-FDS-")))
+    `(multiple-value-bind (,threads ,listen-fds)
+         (make-worker-threads ,fd ,count)
        (unwind-protect (progn ,@body)
-         (join-worker-threads ,threads)))))
+         (join-worker-threads ,threads ,listen-fds)))))
 
 (defun acceptor-loop-threaded (fd)
   (declare (type (unsigned-byte 31) fd))
   (set-nonblocking fd)
   (with-worker-threads (fd (1- *init-threads*))
-    (funcall (worker-thread fd))))
+    (funcall (funcall *worker-thread-for-fd* fd))))
 
 (when bordeaux-threads:*supports-threads-p*
+  (unless (boundp '*worker-thread-for-fd*)
+    (setq *worker-thread-for-fd* *acceptor-loop*))
   (setq *acceptor-loop* 'acceptor-loop-threaded))
 
 (untrace start acceptor-loop-threaded request-loop read write

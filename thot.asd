@@ -20,5 +20,5 @@
   :components
   ((:file "package")
    (:file "thot" :depends-on ("package"))
-   (:file "thot-single" :depends-on ("thot"))
-   (:file "thot-threaded" :depends-on ("thot-single"))))
+   (:file "thot-simple" :depends-on ("thot"))
+   (:file "thot-threaded" :depends-on ("thot-simple"))))

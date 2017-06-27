@@ -192,11 +192,9 @@
    (headers-sent :initform nil
                  :accessor reply-headers-sent%
                  :type boolean)
-   (cont-queue :initform (make-instance 'queue
-                                        :element-type 'function
-                                        :size 40)
-         :accessor reply-cont-queue%
-         :type queue)))
+   (stream :initarg :stream
+           :accessor reply-stream%
+           :type buffered-output-stream)))
 
 (defvar *reply*)
 
@@ -226,19 +224,13 @@
 (defsetf reply-headers-sent (&optional (reply '*reply*)) (value)
   `(setf (reply-headers-sent% ,reply) ,value))
 
-(defun reply-cont-queue (&optional (reply *reply*))
+(defun reply-stream (&optional (reply *reply*))
   (declare (type reply reply))
-  (reply-cont-queue% reply))
-
-(defsetf reply-cont-queue (&optional (reply '*reply*)) (value)
-  `(setf (reply-cont-queue% ,reply) ,value))
+  (reply-stream% reply))
 
 (defun reply-content-length (&optional (reply *reply*))
   (declare (type reply reply))
   (parse-integer (reply-header 'content-length reply)))
-
-(defun reply-stream ()
-  (request-stream))
 
 (defun status (line)
   (let ((status (reply-status)))
@@ -246,44 +238,10 @@
       (error 'status-already-sent status line)))
   (setf (reply-status) line)
   (let ((stream (reply-stream)))
-    (labels ((version (&optional (start 0))
-               (multiple-value-bind (count state)
-                   (write-sequence stream (request-http-version) :start start)
-                 (case state
-                   ((nil) (space))
-                   ((:eof) (error 'stream-end-error :stream stream))
-                   ((:non-blocking) (write (reply-cont-queue)
-                                           (lambda ()
-                                             (version (+ start count)))))
-                   (otherwise (error 'stream-output-error :stream stream)))))
-             (space ()
-               (case (write stream #\Space)
-                 ((nil) (line))
-                 ((:eof) (error 'stream-end-error :stream stream))
-                 ((:non-blocking) (write (reply-cont-queue) #'space))
-                 (otherwise (error 'stream-output-error :stream stream))))
-             (line (&optional (start 0))
-               (multiple-value-bind (count state)
-                   (write-sequence stream line :start start)
-                 (case state
-                   ((nil) (crlf))
-                   ((:eof) (error 'stream-end-error :stream stream))
-                   ((:non-blocking) (write (reply-cont-queue)
-                                           (lambda () (line (+ start count)))))
-                   (otherwise (error 'stream-output-error :stream stream)))))
-             (crlf (&optional (start 0))
-               (multiple-value-bind (count state)
-                   (write-sequence stream +crlf+)
-                 (case state
-                   ((nil) nil)
-                   ((:eof) (error 'stream-end-error :stream stream))
-                   ((:non-blocking) (write (reply-cont-queue)
-                                           (lambda () (crlf (+ start count)))))
-                   (otherwise (error 'stream-output-error
-                                     :stream stream))))))
-      (if (= 0 (queue-length (reply-cont-queue)))
-          (version)
-          (write (reply-cont-queue) #'version)))))
+    (write-sequence stream (request-http-version))
+    (write stream #\Space)
+    (write-sequence stream line)
+    (write-sequence stream +crlf+)))
 
 (defun header (line)
   (unless (reply-status)
@@ -296,30 +254,9 @@
              (setf (rest headers) (list line))
              (return))
            (pop headers))))
-  (let ((stream (request-stream)))
-    (labels ((line (&optional (start 0))
-               (multiple-value-bind (count state)
-                   (write-sequence stream line)
-                 (case state
-                   ((nil) (crlf))
-                   ((:eof) (error 'stream-end-error :stream stream))
-                   ((:non-blocking) (write (reply-cont-queue)
-                                           (lambda () (line (+ start count)))))
-                   (otherwise (error 'stream-output-error
-                                     :stream stream)))))
-             (crlf (&optional (start 0))
-               (multiple-value-bind (count state)
-                   (write-sequence stream +crlf+)
-                 (case state
-                   ((nil) nil)
-                   ((:eof) (error 'stream-end-error :stream stream))
-                   ((:non-blocking) (write (reply-cont-queue)
-                                           (lambda () (crlf (+ start count)))))
-                   (otherwise (error 'stream-output-error
-                                     :stream stream))))))
-      (if (= 0 (queue-length (reply-cont-queue)))
-          (line)
-          (write (reply-cont-queue) #'line)))))
+  (let ((stream (reply-stream)))
+    (write-sequence stream line)
+    (write-sequence stream +crlf+)))
 
 (defun end-headers ()
   (unless (reply-headers-sent)
@@ -328,21 +265,7 @@
 
 (defun content (string)
   (end-headers)
-  (let ((stream (reply-stream)))
-    (labels ((content-string (&optional (start 0))
-               (multiple-value-bind (count state)
-                   (write-sequence (request-stream) string)
-                 (case state
-                   ((nil) nil)
-                   (:eof) (error 'stream-end-error :stream stream)
-                   ((:non-blocking) (write (reply-cont-queue)
-                                           (lambda ()
-                                             (content-string (+ start count)))))
-                   (otherwise (error 'stream-output-error
-                                     :stream stream))))))
-      (if (= 0 (queue-length (reply-cont-queue)))
-          (content-string)
-          (write (reply-cont-queue) #'content-string)))))
+  (write-sequence (reply-stream) string))
 
 (defun 404-not-found ()
   (status "404 Not found")
@@ -371,7 +294,7 @@ The requested url ~S was not found on this server."
            (when (debug-p (or :thot :http))
              (format t "~&~S -> ~S~%" handler-func handler))
            (funcall handler)
-           (flush (request-stream% request))
+           (flush (reply-stream% reply))
            (return))))
     (if (string-equal "keep-alive" (request-header 'connection))
         :keep-alive
@@ -379,12 +302,12 @@ The requested url ~S was not found on this server."
 
 (defvar *stop* nil)
 
-(defun request-loop (stream)
+(defun request-loop (request-stream reply-stream)
   (loop
      (when *stop*
        (return))
-     (let* ((request (make-instance 'request :stream stream))
-            (reply (make-instance 'reply))
+     (let* ((request (make-instance 'request :stream request-stream))
+            (reply (make-instance 'reply :stream reply-stream))
             (result (funcall (request-reader request reply #'request-cont))))
        (unless (eq :keep-alive result)
          (return)))))

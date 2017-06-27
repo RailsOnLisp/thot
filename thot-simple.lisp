@@ -17,10 +17,15 @@
                       (return))
                     (when (find fd readable)
                       (socket:with-accept (clientfd) fd
-                        (with-stream (stream (babel-io-stream
-                                              (fd-io-stream clientfd)))
-                          (request-loop stream)))))))))
-    #'acceptor-loop-simple-fun))
+                        (with-stream (request-stream
+                                      (babel-input-stream
+                                       (fd-input-stream clientfd)))
+                          (with-stream (reply-stream
+                                        (babel-output-stream
+                                         (multi-buffered-output-stream
+                                          (fd-output-stream clientfd))))
+                            (request-loop request-stream reply-stream)))))))))
+      #'acceptor-loop-simple-fun)))
 
 (setq *acceptor-loop* 'acceptor-loop-simple)
 

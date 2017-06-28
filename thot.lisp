@@ -32,6 +32,16 @@
           :accessor request-query%
           :type string)))
 
+(defun reset-request (&optional (request *request*))
+  (declare (type request request))
+  (setf (request-method% request) nil
+        (request-target% request) nil
+        (request-http-version% request) nil
+        (request-uri% request) nil
+        (request-query% request) nil)
+  (clrhash (request-headers% request))
+  request)
+
 (defvar *request*)
 
 (defun request-stream (&optional (request *request*))
@@ -195,6 +205,13 @@
    (stream :initarg :stream
            :accessor reply-stream%
            :type buffered-output-stream)))
+
+(defun reset-reply (&optional (reply *reply*))
+  (declare (type reply reply))
+  (setf (reply-status% reply) nil
+        (reply-headers% reply) nil
+        (reply-headers-sent% reply) nil)
+  reply)
 
 (defvar *reply*)
 

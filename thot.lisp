@@ -285,17 +285,22 @@ The requested url ~S was not found on this server."
   (let ((handlers *url-handlers*)
         (*request* request)
         (*reply* reply))
-    (loop
-       (when (endp handlers)
-         (return))
-       (let* ((handler-func (pop handlers))
-              (handler (funcall handler-func)))
-         (when handler
-           (when (debug-p (or :thot :http))
-             (format t "~&~S -> ~S~%" handler-func handler))
-           (funcall handler)
-           (flush (reply-stream% reply))
-           (return))))
+    (handler-bind
+        ((errno:errno-error (lambda (condition)
+                              (cond ((= errno:+epipe+
+                                        (errno:errno-error-errno condition))
+                                     (return-from request-cont))))))
+      (loop
+         (when (endp handlers)
+           (return))
+         (let* ((handler-func (pop handlers))
+                (handler (funcall handler-func)))
+           (when handler
+             (when (debug-p (or :thot :http))
+               (format t "~&~S -> ~S~%" handler-func handler))
+             (funcall handler)
+             (flush (reply-stream% reply))
+             (return)))))
     (if (string-equal "keep-alive" (request-header 'connection))
         :keep-alive
         nil)))

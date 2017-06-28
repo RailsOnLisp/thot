@@ -60,10 +60,7 @@
           :type 'reply)
    (request :initarg :request
             :accessor worker-request
-            :type 'request)
-   (stream :initarg :stream
-           :reader worker-stream
-           :type stream)))
+            :type 'request)))
 
 (defmethod agent-epoll-events ((worker worker))
   (logior epoll:+in+ epoll:+out+ epoll:+err+))

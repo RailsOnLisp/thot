@@ -98,7 +98,8 @@
          (reply (worker-reply worker))
          (babel-stream (reply-stream reply))
          (stream (stream-underlying-stream babel-stream)))
-    (cond ((= 0 (stream-output-length stream))
+    (cond ((and (null (worker-reader-cont worker))
+                (= 0 (stream-output-length stream)))
            (cond ((worker-keep-alive worker)
                   ;; read request body
                   (setf (worker-reader-cont worker)
@@ -188,7 +189,7 @@
         ((eq *acceptor-loop* 'acceptor-loop-threaded)
          (setq *worker-thread-for-fd* 'acceptor-loop-epoll))))
 
-(untrace socket:socket socket:bind socket:listen socket:accept
+(trace socket:socket socket:bind socket:listen socket:accept
        unistd:close
        epoll:create
        epoll-add epoll-del

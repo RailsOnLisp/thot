@@ -1,6 +1,16 @@
 
 (in-package :thot)
 
+;;  epoll infos
+
+(defclass epoll-infos ()
+  ((fd :initarg :fd
+       :reader epoll-fd
+       :type (unsigned-byte 31))
+   (agents :initform (make-hash-table)
+           :reader epoll-agents
+           :type hash-table)))
+
 ;;  Generic epoll agent class
 
 (defclass agent ()
@@ -9,9 +19,9 @@
        :type (unsigned-byte 31))))
 
 (defgeneric agent-epoll-events (agent))
-(defgeneric agent-error (agent epoll-fd))
-(defgeneric agent-in (agent epoll-fd))
-(defgeneric agent-out (agent epoll-fd))
+(defgeneric agent-error (epoll agent))
+(defgeneric agent-in (epoll agent))
+(defgeneric agent-out (epoll agent))
 
 (define-condition agent-error (error)
   ((agent :initarg :agent
@@ -20,29 +30,29 @@
 
 ;;  Adding an agent
 
-(defvar *epoll-agents*
-  (make-hash-table))
+(defmacro get-agent (epoll fd)
+  `(gethash ,fd (epoll-agents ,epoll)))
 
-(defmacro get-agent (fd)
-  `(gethash ,fd *epoll-agents*))
+(defun remove-agent (epoll fd)
+  (declare (type epoll-infos epoll))
+  (remhash fd (epoll-agents epoll)))
 
-(defun remove-agent (fd)
-  (remhash fd *epoll-agents*))
-
-(defun epoll-add (epoll-fd agent)
+(defun epoll-add (epoll agent)
+  (declare (type epoll-infos epoll))
   (let ((fd (agent-fd agent)))
     (set-nonblocking fd)
-    (setf (get-agent fd) agent)
-    (epoll:add epoll-fd fd
+    (setf (get-agent epoll fd) agent)
+    (epoll:add (epoll-fd epoll) fd
                (agent-epoll-events agent)
                :data-fd fd)))
 
-(defun epoll-del (epoll-fd agent)
+(defun epoll-del (epoll agent)
+  (declare (type epoll-infos epoll))
   (let ((fd (agent-fd agent)))
-    (epoll:del epoll-fd fd)
+    (epoll:del (epoll-fd epoll) fd)
     (socket:shutdown fd t t)
     (unistd:close fd)
-    (remove-agent fd)))
+    (remove-agent epoll fd)))
 
 ;;  Worker agent
 
@@ -68,14 +78,14 @@
 (define-condition worker-error (agent-error)
   ())
 
-(defmethod agent-error ((worker worker) (epoll-fd fixnum))
+(defmethod agent-error ((epoll epoll-infos) (worker worker))
   (error 'worker-error :agent worker))
 
-(defmethod agent-in ((worker worker) (epoll-fd fixnum))
+(defmethod agent-in ((epoll epoll-infos) (worker worker))
   (let ((reader-cont (worker-reader-cont worker)))
     (when reader-cont
       (let ((result (funcall reader-cont)))
-        (cond ((eq :eof result) (epoll-del epoll-fd worker))
+        (cond ((eq :eof result) (epoll-del epoll worker))
               ((eq nil result) (setf (worker-reader-cont worker) nil))
               ((eq :keep-alive result) (setf (worker-keep-alive worker) t
                                              (worker-reader-cont worker) nil)
@@ -83,7 +93,7 @@
               ((functionp result) (setf (worker-reader-cont worker) result))
               (t (error "worker input error ~S" worker)))))))
 
-(defmethod agent-out ((worker worker) (epoll-fd fixnum))
+(defmethod agent-out ((epoll epoll-infos) (worker worker))
   (let* ((request (worker-request worker))
          (reply (worker-reply worker))
          (babel-stream (reply-stream reply))
@@ -95,13 +105,13 @@
                         (request-reader (reset-request request)
                                         (reset-reply reply)
                                         #'request-cont))
-                  (agent-in worker epoll-fd))
+                  (agent-in epoll worker))
                  (t
-                  (epoll-del epoll-fd worker))))
+                  (epoll-del epoll worker))))
           (t
            (case (stream-flush-output-buffer stream)
              ((nil) nil)
-             ((:eof) (epoll-del epoll-fd worker))
+             ((:eof) (epoll-del epoll worker))
              ((:non-blocking) :non-blocking)
              (otherwise (error 'stream-output-error :stream stream)))))))
 
@@ -116,7 +126,7 @@
 (define-condition acceptor-error (agent-error)
   ())
 
-(defmethod agent-error ((acceptor acceptor) (epoll-fd fixnum))
+(defmethod agent-error ((epoll epoll-infos) (acceptor acceptor))
   (error 'acceptor-error :agent acceptor))
 
 (defun make-worker (fd addr)
@@ -134,10 +144,10 @@
                    :request request
                    :reply reply)))
 
-(defmethod agent-in ((acceptor acceptor) (epoll-fd fixnum))
+(defmethod agent-in ((epoll epoll-infos) (acceptor acceptor))
   (multiple-value-bind (fd addr) (socket:accept (agent-fd acceptor))
     (unless (eq :non-blocking fd)
-      (epoll-add epoll-fd (make-worker fd addr)))))
+      (epoll-add epoll (make-worker fd addr)))))
 
 (defclass control (agent)
   ())
@@ -145,7 +155,7 @@
 (defmethod agent-epoll-events ((agent control))
   epoll:+in+)
 
-(defmethod agent-in ((agent control) (epoll-fd fixnum))
+(defmethod agent-in ((epoll epoll-infos) (agent control))
   (setq *stop* t))
 
 ;;  Thread event loop
@@ -154,21 +164,22 @@
   (declare (type (unsigned-byte 31) listenfd))
   (labels ((acceptor-loop-epoll-fun ()
              (epoll:with (epoll-fd)
-               (epoll-add epoll-fd (make-instance 'acceptor :fd listenfd))
-               (when pipe
-                 (epoll-add epoll-fd (make-instance 'control :fd pipe)))
-               (loop
-                  (when *stop*
-                    (return))
-                  (epoll:wait (events fd epoll-fd)
-                    (let ((agent (get-agent fd)))
-                      (unless agent (error "bad epoll fd ~S" fd))
-                      (cond ((not (= 0 (logand epoll:+err+ events)))
-                             (agent-error agent epoll-fd))
-                            ((not (= 0 (logand epoll:+in+ events)))
-                             (agent-in agent epoll-fd))
-                            ((not (= 0 (logand epoll:+out+ events)))
-                             (agent-out agent epoll-fd)))))))))
+               (let ((epoll (make-instance 'epoll-infos :fd epoll-fd)))
+                 (epoll-add epoll (make-instance 'acceptor :fd listenfd))
+                 (when pipe
+                   (epoll-add epoll (make-instance 'control :fd pipe)))
+                 (loop
+                    (when *stop*
+                      (return))
+                    (epoll:wait (events fd epoll-fd)
+                      (let ((agent (get-agent epoll fd)))
+                        (unless agent (error "bad epoll fd ~S" fd))
+                        (cond ((not (= 0 (logand epoll:+err+ events)))
+                               (agent-error epoll agent))
+                              ((not (= 0 (logand epoll:+in+ events)))
+                               (agent-in epoll agent))
+                              ((not (= 0 (logand epoll:+out+ events)))
+                               (agent-out epoll agent))))))))))
     #'acceptor-loop-epoll-fun))
 
 (when (cffi:foreign-symbol-pointer "epoll_create")

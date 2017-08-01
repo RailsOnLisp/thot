@@ -422,11 +422,15 @@ The requested url ~S was not found on this server."
   (loop
      (when *stop*
        (return))
-     (let* ((request (make-instance 'request :stream request-stream))
-            (reply (make-instance 'reply :stream reply-stream))
-            (result (funcall (request-reader request reply #'request-cont))))
-       (unless (eq :keep-alive result)
-         (return)))))
+     (handler-case
+         (let* ((request (make-instance 'request :stream request-stream))
+                (reply (make-instance 'reply :stream reply-stream))
+                (result (funcall (request-reader request reply #'request-cont))))
+           (unless (eq :keep-alive result)
+             (return)))
+       (t (condition)
+         (format t "~A" condition)
+         (continue)))))
 
 (defvar *acceptor-loop*)
 

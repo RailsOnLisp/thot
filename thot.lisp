@@ -346,20 +346,16 @@ The requested url ~S was not found on this server."
 (defun url-encode (string)
   (rol-uri:%-encode string))
 
-(defun directory-index (local remote)
-  (let* ((request-dir (request-dir))
-         (dir (if (< (length request-dir)
-                     (length remote))
-                  (subseq request-dir (length remote))
-                  request-dir)))
-    (header "Content-Type: text/html")
-    (content
-     (with-output-to-string (o)
-       (flet ((w (&rest parts)
-                (dolist (p parts)
-                  (write-sequence o p))))
+(defun directory-index (local remote dir)
+  (header "Content-Type: text/html")
+  (content
+   (with-output-to-string (o)
+     (flet ((w (&rest parts)
+              (dolist (p parts)
+                (write-sequence o p))))
        (w "<html>
  <head>
+  <title>" (h dir) "</title>
  </head>
  <body>
   <h1>" (h dir) "</h1>
@@ -371,19 +367,26 @@ The requested url ~S was not found on this server."
            (let* ((name (dirent-name df))
                   (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
                   (url (str (unless (string= "/" remote)
-                              (str (url-encode remote) "/"))
+                              (url-encode remote))
                             (unless (string= "/" dir)
-                              (url-encode dir)) "/"
+                              (url-encode dir))
+                            "/"
                             (url-encode name) slash)))
              (w "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
 "))))
        (w "  </ul>
  </body>
 </html>
-"))))))
+")))))
 
 (defun directory-handler (local remote)
-  `(directory-index ,local ,remote))
+  (let ((request-dir (request-dir)))
+    (format t "request-dir ~S~%" request-dir)
+    (unless (or (< (length request-dir) (length remote))
+                (not (string= remote request-dir :end2 (length remote))))
+      (let ((dir (subseq request-dir (length remote))))
+        (unless (pathname-name (probe-file (str local dir)))
+          `(directory-index ,local ,remote ,dir))))))
 
 (defparameter *url-handlers*
   '((directory-handler "/" "/")

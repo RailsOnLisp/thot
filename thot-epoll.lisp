@@ -84,7 +84,8 @@
 (defmethod agent-in ((epoll epoll-infos) (worker worker))
   (let ((reader-cont (worker-reader-cont worker)))
     (when reader-cont
-      (let ((result (funcall reader-cont)))
+      (let ((result (handler-case (funcall reader-cont)
+                      (t (condition) (format t "~A~%" condition) :eof))))
         (cond ((eq :eof result) (epoll-del epoll worker))
               ((eq nil result) (setf (worker-reader-cont worker) nil))
               ((eq :keep-alive result) (setf (worker-keep-alive worker) t

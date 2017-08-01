@@ -28,6 +28,9 @@
             :type hash-table)
    (uri :accessor request-uri%
         :type string)
+   (scheme :type string)
+   (host :type string)
+   (dir :type string)
    (query :initform nil
           :accessor request-query%
           :type string)))
@@ -82,6 +85,43 @@
   (unless (slot-boundp request 'uri)
     (split-request-uri-and-query request))
   (slot-value request 'uri))
+
+(defun uri-scheme (uri)
+  (let ((column (position #\: uri)))
+    (unless (null column)
+      (subseq uri 0 column))))
+
+(defun request-scheme (&optional (request *request*))
+  (declare (type request request))
+  (unless (slot-boundp request 'scheme)
+    (setf (slot-value request 'scheme)
+          (uri-scheme (request-uri request))))
+  (slot-value request 'scheme))
+
+(defun uri-host (uri)
+  (let ((host (search "://" uri)))
+    (unless (null host)
+      (incf host 3)
+      (let ((host-end (position #\/ uri :start host)))
+        (subseq uri host host-end)))))
+
+(defun request-host (&optional (request *request*))
+  (declare (type request request))
+  (unless (slot-boundp request 'host)
+    (setf (slot-value request 'host)
+          (uri-host (request-uri request))))
+  (slot-value request 'host))
+
+(defun uri-dir (uri)
+  (let ((dir-end (position #\/ uri :from-end t :start 1)))
+    (subseq uri 0 dir-end)))
+
+(defun request-dir (&optional (request *request*))
+  (declare (type request request))
+  (unless (slot-boundp request 'dir)
+    (setf (slot-value request 'dir)
+          (uri-dir (request-uri request))))
+  (slot-value request 'dir))
 
 (defun request-query (&optional (request *request*))
   (declare (type request request))
@@ -293,10 +333,64 @@ The requested url ~S was not found on this server."
                    (request-target))))
 
 (defun 404-not-found-handler ()
-  '404-not-found)
+  '(404-not-found))
 
-(defvar *url-handlers*
-  '(404-not-found-handler))
+(defun str (&rest parts)
+  (with-output-to-string (s)
+    (dolist (p parts)
+      (write-sequence s p))))
+
+(defun h (string)
+  (expand-entities string))
+
+(defun url-encode (string)
+  (rol-uri:%-encode string))
+
+(defun directory-index (local remote)
+  (let* ((request-dir (request-dir))
+         (dir (if (< (length request-dir)
+                     (length remote))
+                  (subseq request-dir (length remote))
+                  request-dir)))
+    (header "Content-Type: text/html")
+    (content
+     (with-output-to-string (o)
+       (flet ((w (&rest parts)
+                (dolist (p parts)
+                  (write-sequence o p))))
+       (w "<html>
+ <head>
+ </head>
+ <body>
+  <h1>" (h dir) "</h1>
+  <ul>
+")
+       (let* ((localdir (str local "/" dir))
+              (entries (dir localdir)))
+         (dolist (df entries)
+           (let* ((name (dirent-name df))
+                  (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
+                  (url (str (unless (string= "/" remote)
+                              (str (url-encode remote) "/"))
+                            (unless (string= "/" dir)
+                              (url-encode dir)) "/"
+                            (url-encode name) slash)))
+             (w "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
+"))))
+       (w "  </ul>
+ </body>
+</html>
+"))))))
+
+(defun directory-handler (local remote)
+  `(directory-index ,local ,remote))
+
+(defparameter *url-handlers*
+  '((directory-handler "/" "/")
+    (404-not-found-handler)))
+
+(defun call (list)
+  (apply (first list) (rest list)))
 
 (defun request-cont (request reply)
   (let ((handlers *url-handlers*)
@@ -310,12 +404,12 @@ The requested url ~S was not found on this server."
       (loop
          (when (endp handlers)
            (return))
-         (let* ((handler-func (pop handlers))
-                (handler (funcall handler-func)))
+         (let* ((handler-form (pop handlers))
+                (handler (call handler-form)))
            (when handler
              (when (debug-p (or :thot :http))
-               (format t "~&~S -> ~S~%" handler-func handler))
-             (funcall handler)
+               (format t "~&~S -> ~S~%" handler-form handler))
+             (call handler)
              (flush (reply-stream% reply))
              (return)))))
     (if (string-equal "keep-alive" (request-header 'connection))

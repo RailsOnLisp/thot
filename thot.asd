@@ -12,11 +12,14 @@
                "bordeaux-set"
                "bordeaux-threads"
                "babel-stream"
+               "cffi-dirent"
                "cffi-epoll"
                "cffi-socket"
                "cl-debug"
                "cl-stream"
-               "fd-stream")
+               "fd-stream"
+               "html-entities"
+               "rol-uri")
   :components
   ((:file "package")
    (:file "thot" :depends-on ("package"))

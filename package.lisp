@@ -21,8 +21,10 @@
    :cffi-errno
    :cl-debug
    :cl-stream
+   :common-lisp
+   :dirent
    :fd-stream
-   :common-lisp)
+   :html-entities)
   #.(cl-stream:shadowing-import-from)
   (:export
    #:request

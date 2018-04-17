@@ -1,0 +1,5 @@
+#!/bin/sh
+sbcl <<EOF
+(require :thot)
+(thot:start)
+EOF

@@ -17,9 +17,9 @@
                "cffi-socket"
                "cl-debug"
                "cl-stream"
-               "fd-stream"
                "html-entities"
-               "rol-uri")
+               "rol-uri"
+               "unistd-stream")
   :components
   ((:file "package")
    (:file "thot" :depends-on ("package"))

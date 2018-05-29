@@ -23,8 +23,8 @@
    :cl-stream
    :common-lisp
    :dirent
-   :fd-stream
-   :html-entities)
+   :html-entities
+   :unistd-stream)
   #.(cl-stream:shadowing-import-from)
   (:export
    #:request

@@ -1,3 +1,7 @@
+;;
+;;  Thot - http web server
+;;  Copyright 2017,2018 Thomas de Grivel <thoxdg@gmail.com> 0614550127
+;;
 
 (in-package :thot)
 

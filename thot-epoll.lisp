@@ -136,10 +136,10 @@
   (error 'acceptor-error :agent acceptor))
 
 (defun make-worker (fd addr)
-  (let* ((request-stream (babel-input-stream (fd-input-stream fd)))
+  (let* ((request-stream (babel-input-stream (unistd-input-stream fd)))
          (reply-stream (babel-output-stream
                         (multi-buffered-output-stream
-                         (fd-output-stream fd))))
+                         (unistd-output-stream fd))))
          (request (make-instance 'request :stream request-stream))
          (reply (make-instance 'reply :stream reply-stream))
          (reader-cont (request-reader request reply #'request-cont)))

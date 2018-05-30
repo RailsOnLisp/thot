@@ -28,5 +28,5 @@
   ((:file "package")
    (:file "thot" :depends-on ("package"))
    (:file "thot-simple" :depends-on ("thot"))
-   #+threads (:file "thot-threaded" :depends-on ("thot-simple"))
+   (:file "thot-threaded" :depends-on ("thot-simple"))
    #+linux (:file "thot-epoll" :depends-on ("thot-threaded"))))

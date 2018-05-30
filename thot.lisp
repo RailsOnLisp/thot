@@ -355,8 +355,7 @@ The requested url ~S was not found on this server."
   (content
    (with-output-to-string (o)
      (flet ((w (&rest parts)
-              (dolist (p parts)
-                (write-sequence o p))))
+              (write-str o parts)))
        (w "<html>
  <head>
   <title>" (h dir) "</title>

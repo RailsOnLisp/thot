@@ -23,11 +23,11 @@
                       (socket:with-accept (clientfd) fd
                         (with-stream (request-stream
                                       (babel-input-stream
-                                       (fd-input-stream clientfd)))
+                                       (unistd-input-stream clientfd)))
                           (with-stream (reply-stream
                                         (babel-output-stream
                                          (multi-buffered-output-stream
-                                          (fd-output-stream clientfd))))
+                                          (unistd-output-stream clientfd))))
                             (request-loop request-stream reply-stream)))))))))
       #'acceptor-loop-simple-fun)))
 

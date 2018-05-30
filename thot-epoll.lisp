@@ -194,8 +194,4 @@
         ((eq *acceptor-loop* 'acceptor-loop-threaded)
          (setq *worker-thread-for-fd* 'acceptor-loop-epoll))))
 
-(trace socket:socket socket:bind socket:listen socket:accept
-       unistd:close
-       epoll:create
-       epoll-add epoll-del
-       acceptor-loop-epoll make-worker agent-in agent-out)
+;;(untrace socket:socket socket:bind socket:listen socket:accept unistd:close epoll:create epoll-add epoll-del acceptor-loop-epoll make-worker agent-in agent-out)

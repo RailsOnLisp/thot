@@ -115,7 +115,7 @@
                  (t
                   (epoll-del epoll worker))))
           (t
-           (case (stream-flush-output-buffer stream)
+           (case (stream-flush-output stream)
              ((nil) nil)
              ((:eof) (epoll-del epoll worker))
              ((:non-blocking) :non-blocking)

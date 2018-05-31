@@ -436,8 +436,8 @@ The requested url ~S was not found on this server."
                 (result (funcall (request-reader request reply #'request-cont))))
            (unless (eq :keep-alive result)
              (return)))
-       (t (condition)
-         (format t "~A" condition)
+       (warning (w)
+         (format t "WARN ~A" w)
          (continue)))))
 
 (defvar *acceptor-loop*)

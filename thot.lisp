@@ -360,21 +360,19 @@ The requested url ~S was not found on this server."
                 (stream-write-sequence out part))))
        (w "<html>
  <head>
-  <title>" (h dir) "</title>
+  <title>" (h remote) (h dir) "</title>
  </head>
  <body>
-  <h1>" (h dir) "</h1>
+  <h1>" (h remote) (h dir) "</h1>
   <ul>
 ")
-       (let* ((localdir (str local "/" dir))
-              (entries (dir localdir)))
-         (dolist (df entries)
+       (let ((localdir (str local dir)))
+         (do-dir (df localdir)
            (let* ((name (dirent-name df))
                   (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
                   (url (str (unless (string= "/" remote)
-                              (url-encode remote))
-                            (unless (string= "/" dir)
-                              (url-encode dir))
+                              remote)
+                            "/" dir
                             "/"
                             (url-encode name) slash)))
              (w "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>

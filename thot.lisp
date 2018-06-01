@@ -117,8 +117,8 @@
   (slot-value request 'host))
 
 (defun uri-dir (uri)
-  (let ((dir-end (position #\/ uri :from-end t :start 1)))
-    (subseq uri 0 dir-end)))
+  (let ((dir-end (position #\/ uri :from-end t)))
+    (subseq uri 0 (or dir-end 0))))
 
 (defun request-dir (&optional (request *request*))
   (declare (type request request))
@@ -351,6 +351,31 @@ The requested url ~S was not found on this server."
 (defun url-encode (string)
   (rol-uri:%-encode string))
 
+(defun path-directory-p (path)
+  (declare (type string path))
+  (let ((len (length path)))
+    (when (< 0 len)
+      (char= #\/ (char path (1- len))))))
+
+;;(path-directory-p "/")
+
+(defun path-as-directory (path)
+  (if (path-directory-p path)
+      path
+      (str path "/")))
+
+;;(path-as-directory "/")
+
+(defun probe-directory (path)
+  (let ((dirp (ignore-errors (dirent:opendir path))))
+    (when dirp
+      (dirent:closedir dirp)
+      (path-as-directory path))))
+
+(defun prefix-p (pre str)
+  (and (<= (length pre) (length str))
+       (string= pre str :end2 (length pre))))
+
 (defun directory-index (local remote dir)
   (header "Content-Type: text/html")
   (content
@@ -370,11 +395,9 @@ The requested url ~S was not found on this server."
          (do-dir (df localdir)
            (let* ((name (dirent-name df))
                   (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
-                  (url (str (unless (string= "/" remote)
-                              remote)
-                            "/" dir
-                            "/"
-                            (url-encode name) slash)))
+                  (url (str remote dir (url-encode name) slash)))
+             (format t "remote ~S dir ~S name ~S slash ~S~%"
+                     remote dir name slash)
              (w "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
 "))))
        (w "  </ul>
@@ -383,13 +406,13 @@ The requested url ~S was not found on this server."
 ")))))
 
 (defun directory-handler (local remote)
-  (let ((request-dir (request-dir)))
-    (format t "request-dir ~S~%" request-dir)
-    (unless (or (< (length request-dir) (length remote))
-                (not (string= remote request-dir :end2 (length remote))))
-      (let ((dir (subseq request-dir (length remote))))
-        (unless (pathname-name (probe-file (str local dir)))
-          `(directory-index ,local ,remote ,dir))))))
+  (let ((dir (path-as-directory (request-uri))))
+    (format t "dir ~S local ~S remote ~S~%" dir local remote)
+    (when (prefix-p remote dir)
+      (let ((subdir (subseq dir (length remote))))
+        (format t "subdir ~S~%" subdir)
+        (when (probe-directory (str local subdir))
+          `(directory-index ,local ,remote ,subdir))))))
 
 (defparameter *url-handlers*
   '((directory-handler "/" "/")

@@ -89,7 +89,7 @@
   (let ((reader-cont (worker-reader-cont worker)))
     (when reader-cont
       (let ((result (handler-case (funcall reader-cont)
-                      (t (condition) (format t "~A~%" condition) :eof))))
+                      (warning (x) (format t "~A~%" x) :eof))))
         (cond ((eq :eof result) (epoll-del epoll worker))
               ((eq nil result) (setf (worker-reader-cont worker) nil))
               ((eq :keep-alive result) (setf (worker-keep-alive worker) t

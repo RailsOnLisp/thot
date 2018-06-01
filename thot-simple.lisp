@@ -33,5 +33,5 @@
 
 (setq *acceptor-loop* 'acceptor-loop-simple)
 
-;(untrace acceptor-loop request-loop read write cffi-socket:accept unistd:close)
+;(trace acceptor-loop request-loop read write cffi-socket:accept unistd:close)
 

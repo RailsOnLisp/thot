@@ -5,7 +5,7 @@
 
 (in-package :thot)
 
-(setf (debug-p :thot) nil)
+(setf (debug-p :thot) t)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (boundp '+crlf+)
@@ -446,6 +446,9 @@ The requested url ~S was not found on this server."
 
 (defun start (&key (host "0.0.0.0") (port 8000))
   (setq *stop* nil)
+  (when (debug-p :thot)
+    (format t "~&Thot starting on ~A:~A with ~A~%"
+            host port *acceptor-loop*))
   (let ((*host* host)
         (*port* port))
     (socket:with-socket (fd socket:+af-inet+

@@ -28,6 +28,7 @@
    :common-lisp
    :dirent
    :html-entities
+   :str
    :unistd-stream)
   #.(cl-stream:shadowing-import-from)
   (:export

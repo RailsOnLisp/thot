@@ -325,9 +325,11 @@
     (setf (reply-headers-sent) t)
     (header "")))
 
-(defun content (string)
+(defun content (&rest parts)
   (end-headers)
-  (stream-write-sequence (reply-stream) string))
+  (walk-str (lambda (x)
+              (stream-write-sequence (reply-stream) x))
+            parts))
 
 (defun 404-not-found ()
   (status "404 Not found")
@@ -339,11 +341,6 @@ The requested url ~S was not found on this server."
 
 (defun 404-not-found-handler ()
   '(404-not-found))
-
-(defun str (&rest parts)
-  (with-output-to-string (s)
-    (dolist (p parts)
-      (stream-write-sequence s p))))
 
 (defun h (string)
   (expand-entities string))
@@ -378,12 +375,7 @@ The requested url ~S was not found on this server."
 
 (defun directory-index (local remote dir)
   (header "Content-Type: text/html")
-  (content
-   (with-output-to-string (out)
-     (flet ((w (&rest parts)
-              (dolist (part parts)
-                (stream-write-sequence out part))))
-       (w "<html>
+  (content "<html>
  <head>
   <title>" (h remote) (h dir) "</title>
  </head>
@@ -468,10 +460,10 @@ The requested url ~S was not found on this server."
 (defvar *port*)
 
 (defun start (&key (host "0.0.0.0") (port 8000))
-  (setq *stop* nil)
   (when (debug-p :thot)
-    (format t "~&Thot starting on ~A:~A with ~A~%"
-            host port *acceptor-loop*))
+    (format t "~&Thot start ~A ~A~%" host port)
+    (force-output))
+  (setq *stop* nil)
   (let ((*host* host)
         (*port* port))
     (socket:with-socket (fd socket:+af-inet+
@@ -479,8 +471,13 @@ The requested url ~S was not found on this server."
                             0)
       (socket:bind-inet fd host port)
       (socket:listen fd 128)
+      (when (debug-p :thot)
+        (format t "~A~%" *acceptor-loop*))
       (funcall (funcall *acceptor-loop* fd)))))
 
 (defun set-nonblocking (fd)
   (let ((flags (fcntl:getfl fd)))
     (fcntl:setfl fd (logior fcntl:+o-nonblock+ flags))))
+
+;(trace socket:socket socket:bind socket:bind-inet unistd:close unistd:c-close)
+;(trace header content)

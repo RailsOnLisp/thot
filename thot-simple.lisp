@@ -21,17 +21,17 @@
                       (return))
                     (when (find fd readable)
                       (socket:with-accept (clientfd) fd
-                        (with-stream (request-stream
-                                      (babel-input-stream
-                                       (unistd-input-stream clientfd)))
-                          (with-stream (reply-stream
-                                        (babel-output-stream
-                                         (multi-buffered-output-stream
-                                          (unistd-output-stream clientfd))))
-                            (request-loop request-stream reply-stream)))))))))
+                        (let ((request-stream
+                               (babel-input-stream
+                                (unistd-input-stream clientfd)))
+                              (reply-stream
+                               (babel-output-stream
+                                (multi-buffered-output-stream
+                                 (unistd-output-stream clientfd)))))
+                          (request-loop request-stream reply-stream)
+                          (stream-flush reply-stream))))))))
       #'acceptor-loop-simple-fun)))
 
 (setq *acceptor-loop* 'acceptor-loop-simple)
 
-;(trace acceptor-loop request-loop read write cffi-socket:accept unistd:close)
-
+;(trace acceptor-loop-simple request-loop cffi-socket:accept unistd:write stream-flush stream-flush-output unistd:close)

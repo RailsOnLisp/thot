@@ -23,6 +23,7 @@
                "cl-stream"
                "html-entities"
                "rol-uri"
+               "str"
                "unistd-stream")
   :components
   ((:file "package")

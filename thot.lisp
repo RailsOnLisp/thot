@@ -383,19 +383,20 @@ The requested url ~S was not found on this server."
   <h1>" (h remote) (h dir) "</h1>
   <ul>
 ")
-       (let ((localdir (str local dir)))
-         (do-dir (df localdir)
-           (let* ((name (dirent-name df))
-                  (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
-                  (url (str remote dir (url-encode name) slash)))
-             (format t "remote ~S dir ~S name ~S slash ~S~%"
-                     remote dir name slash)
-             (w "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
+  (let ((localdir (str local dir)))
+    (do-dir (df localdir)
+      (let* ((name (dirent-name df))
+             (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
+             (url (str remote dir (url-encode name) slash)))
+        (when (debug-p :directory)
+          (format t "remote ~S dir ~S name ~S slash ~S~%"
+                  remote dir name slash))
+        (content "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
 "))))
-       (w "  </ul>
+  (content "  </ul>
  </body>
 </html>
-")))))
+"))
 
 (defun directory-handler (local remote)
   (let ((dir (path-as-directory (request-uri))))

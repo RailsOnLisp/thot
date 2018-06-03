@@ -400,10 +400,12 @@ The requested url ~S was not found on this server."
 
 (defun directory-handler (local remote)
   (let ((dir (path-as-directory (request-uri))))
-    (format t "dir ~S local ~S remote ~S~%" dir local remote)
+    (when (debug-p :directory)
+      (format t "dir ~S local ~S remote ~S~%" dir local remote))
     (when (prefix-p remote dir)
       (let ((subdir (subseq dir (length remote))))
-        (format t "subdir ~S~%" subdir)
+        (when (debug-p :directory)
+          (format t "subdir ~S~%" subdir))
         (when (probe-directory (str local subdir))
           `(directory-index ,local ,remote ,subdir))))))
 

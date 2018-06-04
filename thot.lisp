@@ -363,11 +363,11 @@ The requested url ~S was not found on this server."
 
 ;;(path-as-directory "/")
 
-(defun probe-directory (path)
-  (let ((dirp (ignore-errors (dirent:opendir path))))
-    (when dirp
+(defun probe-dir (path)
+  (let ((dirp (dirent:c-opendir path)))
+    (unless (cffi:null-pointer-p dirp)
       (dirent:closedir dirp)
-      (path-as-directory path))))
+      t)))
 
 (defun prefix-p (pre str)
   (and (<= (length pre) (length str))
@@ -406,7 +406,7 @@ The requested url ~S was not found on this server."
       (let ((subdir (subseq dir (length remote))))
         (when (debug-p :directory)
           (format t "subdir ~S~%" subdir))
-        (when (probe-directory (str local subdir))
+        (when (probe-dir (str local subdir))
           `(directory-index ,local ,remote ,subdir))))))
 
 (defparameter *url-handlers*

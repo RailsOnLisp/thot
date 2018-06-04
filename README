@@ -1,0 +1,6 @@
+
+(asdf:load-system :thot)
+
+(thot:start)
+
+(thot:start :port 8000)

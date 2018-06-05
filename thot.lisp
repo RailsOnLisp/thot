@@ -456,9 +456,10 @@ The requested url "
      (when *stop*
        (return))
      (handler-case
-         (let* ((request (make-instance 'request :stream request-stream))
+         (let* ((req (make-instance 'request :stream request-stream))
                 (reply (make-instance 'reply :stream reply-stream))
-                (result (funcall (request-reader request reply #'request-cont))))
+                (reader (request-reader req reply #'request-cont))
+                (result (funcall reader)))
            (unless (eq :keep-alive result)
              (return)))
        (warning (w)

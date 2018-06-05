@@ -202,7 +202,8 @@
                       (format t "~&thot: ~A ~A ~A~%"
                               (request-method% request)
                               (request-target% request)
-                              (request-http-version% request)))
+                              (request-http-version% request))
+                      (force-output))
                     (next-header))
                    (t (error "Missing request line LF"))))
            (next-header (char)
@@ -228,7 +229,8 @@
            (header-lf (char)
              (cond ((char= #\Newline char)
                     (when (debug-p (or :thot :http))
-                      (format t "~&thot: ~A: ~A~%" name value))
+                      (format t "~&thot: ~A: ~A~%" name value)
+                      (force-output))
                     (setf (request-header name request) value)
                     (next-header))
                    (t (error "Missing header LF"))))
@@ -390,7 +392,8 @@ The requested url ~S was not found on this server."
              (url (str remote dir (url-encode name) slash)))
         (when (debug-p :directory)
           (format t "remote ~S dir ~S name ~S slash ~S~%"
-                  remote dir name slash))
+                  remote dir name slash)
+          (force-output))
         (content "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
 "))))
   (content "  </ul>
@@ -401,11 +404,13 @@ The requested url ~S was not found on this server."
 (defun directory-handler (local remote)
   (let ((dir (path-as-directory (request-uri))))
     (when (debug-p :directory)
-      (format t "dir ~S local ~S remote ~S~%" dir local remote))
+      (format t "dir ~S local ~S remote ~S~%" dir local remote)
+      (force-output))
     (when (prefix-p remote dir)
       (let ((subdir (subseq dir (length remote))))
         (when (debug-p :directory)
-          (format t "subdir ~S~%" subdir))
+          (format t "subdir ~S~%" subdir)
+          (force-output))
         (when (probe-dir (str local subdir))
           `(directory-index ,local ,remote ,subdir))))))
 
@@ -431,8 +436,9 @@ The requested url ~S was not found on this server."
          (let* ((handler-form (pop handlers))
                 (handler (call handler-form)))
            (when handler
-             (when (debug-p (or :thot :http))
-               (format t "~&~S -> ~S~%" handler-form handler))
+             (when (debug-p :thot))
+               (format t "~&~S -> ~S~%" handler-form handler)
+               (force-output))
              (call handler)
              (stream-flush (reply-stream% reply))
              (return)))))
@@ -454,6 +460,7 @@ The requested url ~S was not found on this server."
              (return)))
        (warning (w)
          (format t "WARN ~A" w)
+         (force-output)
          (continue)))))
 
 (defvar *acceptor-loop*)
@@ -475,7 +482,8 @@ The requested url ~S was not found on this server."
       (socket:bind-inet fd host port)
       (socket:listen fd 128)
       (when (debug-p :thot)
-        (format t "~A~%" *acceptor-loop*))
+        (format t "~A~%" *acceptor-loop*)
+        (force-output))
       (funcall (funcall *acceptor-loop* fd)))))
 
 (defun set-nonblocking (fd)

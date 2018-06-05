@@ -329,9 +329,10 @@
 
 (defun content (&rest parts)
   (end-headers)
-  (walk-str (lambda (x)
-              (stream-write-sequence (reply-stream) x))
-            parts))
+  (let ((stream (reply-stream)))
+    (walk-str (lambda (x)
+                (stream-write-sequence stream x))
+              parts)))
 
 (defun 404-not-found ()
   (status "404 Not found")

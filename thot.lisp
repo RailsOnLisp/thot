@@ -336,10 +336,11 @@
 (defun 404-not-found ()
   (status "404 Not found")
   (header "Content-Type: text/plain")
-  (content (format nil "404 Not found
+  (content "404 Not found
 
-The requested url ~S was not found on this server."
-                   (request-target))))
+The requested url "
+           (request-target)
+           " was not found on this server."))
 
 (defun 404-not-found-handler ()
   '(404-not-found))

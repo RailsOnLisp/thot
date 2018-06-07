@@ -399,7 +399,10 @@ The requested url "
           (format t "remote ~S dir ~S name ~S slash ~S~%"
                   remote dir name slash)
           (force-output))
-        (content "   <li><a href=\"" (h url) "\">" (h name) slash "</a></li>
+        (content "   <li><a href=\"" (h url) "\">"
+                 (h name)
+                 slash
+                 "</a></li>
 "))))
   (content "  </ul>
  </body>

@@ -23,6 +23,7 @@
    :bordeaux-threads
    :cffi
    :cffi-errno
+   :cffi-stat
    :cl-debug
    :cl-stream
    :common-lisp

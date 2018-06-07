@@ -19,6 +19,7 @@
                "cffi-dirent"
                #+linux "cffi-epoll"
                "cffi-socket"
+               "cffi-stat"
                "cl-debug"
                "cl-stream"
                "html-entities"

@@ -5,7 +5,9 @@
 
 (in-package :thot)
 
-(setf (debug-p :thot) t)
+;;(setf (debug-p :thot) t)
+;;(setf (debug-p :directory) t)
+;;(setf (debug-p :file) t)
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (boundp '+crlf+)

@@ -415,9 +415,10 @@ The requested url "
       (format t "dir ~S local ~S remote ~S~%" dir local remote)
       (force-output))
     (when (prefix-p remote dir)
-      (let ((subdir (subseq dir (length remote))))
+      (let* ((subdir (subseq dir (length remote)))
+             (local-path (str local subdir)))
         (when (debug-p :directory)
-          (format t "subdir ~S~%" subdir)
+          (format t "subdir ~S local-path ~S~%" subdir local-path)
           (force-output))
         (with-stat (stat nil) local-path
           (when (s-isdir (stat-mode stat))

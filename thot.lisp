@@ -414,11 +414,57 @@ The requested url "
         (when (debug-p :directory)
           (format t "subdir ~S~%" subdir)
           (force-output))
-        (when (probe-dir (str local subdir))
-          `(directory-index ,local ,remote ,subdir))))))
+        (with-stat (stat nil) local-path
+          (when (s-isdir (stat-mode stat))
+            `(directory-index ,local ,remote ,subdir)))))))
+
+(defun fd-file-size (fd)
+  (let ((end (unistd:lseek fd 0 unistd:+seek-end+)))
+    (unistd:lseek fd 0 unistd:+seek-set+)
+    end))
+
+(defun stream-file-size (stream)
+  (fd-file-size (stream-fd stream)))
+
+(defun path-name (path)
+  (let ((start (position #\/ path :from-end t)))
+    (when start
+      (subseq path (1+ start)))))
+
+(defun path-extension (path)
+  (let* ((name (path-name path))
+         (start (position #\. name :from-end t)))
+    (when start
+      (ext (subseq  path start)))))
+
+(defun file (path)
+  (let* ((ext (path-extension path))
+         (type (mime-type ext)))
+    (header "Content-Type: " type)
+    (with-stream (in (unistd-stream-open path :read t))
+      (let ((size (stream-file-size in)))
+        (header "Content-Length: " size))
+      (end-headers)
+      (stream-copy in (reply-stream)))))
+
+(defun file-handler (local remote)
+  (let ((uri (request-uri)))
+    (when (debug-p :file)
+      (format t "uri ~S local ~S remote ~S~%" uri local remote)
+      (force-output))
+    (when (prefix-p remote uri)
+      (let* ((path (subseq uri (length remote)))
+             (local-path (str local path)))
+        (when (debug-p :file)
+          (format t "local-path ~S~%" local-path)
+          (force-output))
+        (with-stat (stat nil) local-path
+          (when (s-isreg (stat-mode stat))
+            `(file ,local-path)))))))
 
 (defparameter *url-handlers*
-  '((directory-handler "/" "/")
+  '((file-handler "/var/www/htdocs/" "/")
+    (directory-handler "/var/www/htdocs/" "/")
     (404-not-found-handler)))
 
 (defun call (list)

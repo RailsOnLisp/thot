@@ -473,7 +473,10 @@ The requested url "
     (directory-handler "/var/www/htdocs/" "/")
     (404-not-found-handler)))
 
-(defun call (list)
+(defun call-handler-form (list)
+  (apply (first list) (rest list)))
+
+(defun call-handler (list)
   (apply (first list) (rest list)))
 
 (defun request-cont (request reply)
@@ -485,18 +488,15 @@ The requested url "
                               (cond ((= errno:+epipe+
                                         (errno:errno-error-errno condition))
                                      (return-from request-cont))))))
-      (loop
-         (when (endp handlers)
-           (return))
-         (let* ((handler-form (pop handlers))
-                (handler (call handler-form)))
-           (when handler
-             (when (debug-p :thot))
-               (format t "~&~S -> ~S~%" handler-form handler)
-               (force-output))
-             (call handler)
-             (stream-flush (reply-stream% reply))
-             (return)))))
+      (dolist (handler-form handlers)
+        (let ((handler (call-handler-form handler-form)))
+          (when (debug-p :thot)
+            (format t "~&~S -> ~S~%" handler-form handler)
+            (force-output))
+          (when handler
+            (call-handler handler)
+            (stream-flush (reply-stream% reply))
+            (return)))))
     (if (string-equal "keep-alive" (request-header 'connection))
         :keep-alive
         nil)))
@@ -548,3 +548,4 @@ The requested url "
 
 ;(trace socket:socket socket:bind socket:bind-inet unistd:close unistd:c-close)
 ;(trace header content)
+;(trace request-cont file-handler directory-handler call-handler-form call-handler)

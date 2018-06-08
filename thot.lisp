@@ -381,6 +381,16 @@ The requested url "
   (and (<= (length pre) (length str))
        (string= pre str :end2 (length pre))))
 
+(defun sorted-dir (path)
+  (let ((dirs)
+        (files))
+    (do-dir (df path)
+      (if (= +dt-dir+ (dirent-type df))
+          (push (str (dirent-name df) "/") dirs)
+          (push (dirent-name df) files)))
+    (append (sort dirs #'string<)
+            (sort files #'string<))))
+
 (defun directory-index (local remote dir)
   (header "Content-Type: text/html")
   (content "<html>
@@ -391,18 +401,15 @@ The requested url "
   <h1>" (h remote) (h dir) "</h1>
   <ul>
 ")
-  (let ((localdir (str local dir)))
-    (do-dir (df localdir)
-      (let* ((name (dirent-name df))
-             (slash (if (= +dt-dir+ (dirent-type df)) "/" ""))
-             (url (str remote dir (url-encode name) slash)))
+  (let* ((localdir (str local dir))
+         (sorted (sorted-dir localdir)))
+    (dolist (name sorted)
+      (let* ((url (str remote dir (url-encode name))))
         (when (debug-p :directory)
-          (format t "remote ~S dir ~S name ~S slash ~S~%"
-                  remote dir name slash)
+          (format t "name ~S url ~S~%" name url)
           (force-output))
         (content "   <li><a href=\"" (h url) "\">"
                  (h name)
-                 slash
                  "</a></li>
 "))))
   (content "  </ul>

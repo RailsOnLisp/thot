@@ -495,19 +495,21 @@ The requested url "
         ((errno:errno-error (lambda (condition)
                               (cond ((= errno:+epipe+
                                         (errno:errno-error-errno condition))
+                                     (format t "~&~S~%" condition)
                                      (return-from request-cont))))))
-      (dolist (handler-form handlers)
-        (let ((handler (call-handler-form handler-form)))
-          (when (debug-p :thot)
-            (format t "~&~S -> ~S~%" handler-form handler)
-            (force-output))
-          (when handler
-            (call-handler handler)
-            (stream-flush (reply-stream% reply))
-            (return)))))
-    (if (string-equal "keep-alive" (request-header 'connection))
-        :keep-alive
-        nil)))
+      (loop
+         (let ((handler-form (pop handlers)))
+           (let ((handler (call-handler-form handler-form)))
+             (when (debug-p :thot)
+               (format t "~&~S -> ~S~%" handler-form handler)
+               (force-output))
+             (when handler
+               (call-handler handler)
+               (stream-flush (reply-stream% reply))
+               (return)))))
+      (if (string-equal "keep-alive" (request-header 'connection))
+          :keep-alive
+          nil))))
 
 (defvar *stop* nil)
 

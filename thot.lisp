@@ -237,7 +237,8 @@
                     (next-header))
                    (t (error "Missing header LF"))))
            (end-of-headers (char)
-             (cond ((char= #\Newline char) (funcall cont request reply))
+             (cond ((char= #\Newline char)
+                    (funcall cont request reply))
                    (t (error "Missing end of headers LF")))))
         #'method))))
 

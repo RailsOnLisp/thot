@@ -1,5 +1,2 @@
-#!/bin/sh
-sbcl <<EOF
-(require :thot)
+(asdf:load-system :thot)
 (thot:start)
-EOF

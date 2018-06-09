@@ -28,24 +28,23 @@
            :type stream)
    (method :initarg :method
            :accessor request-method%
-           :type symbol)
+           :type (or null symbol))
    (target :initarg :target
            :accessor request-target%
-           :type string)
+           :type (or null string))
    (http-version :initarg :http-version
                  :accessor request-http-version%
-                 :type string)
+                 :type (or null string))
    (headers :initform (make-hash-table :test 'equalp :size 32)
             :reader request-headers%
             :type hash-table)
    (uri :accessor request-uri%
-        :type string)
-   (scheme :type string)
-   (host :type string)
-   (dir :type string)
-   (query :initform nil
-          :accessor request-query%
-          :type string)))
+        :type (or null string))
+   (scheme :type (or null string))
+   (host :type (or null string))
+   (dir :type (or null string))
+   (query :accessor request-query%
+          :type (or null string))))
 
 (defvar *request*)
 
@@ -264,7 +263,7 @@
                  :type boolean)
    (stream :initarg :stream
            :accessor reply-stream%
-           :type buffered-output-stream)))
+           :type output-stream)))
 
 (defvar *reply*)
 

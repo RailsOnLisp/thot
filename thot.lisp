@@ -151,7 +151,9 @@
   `(setf (gethash ,header-name (request-headers ,request)) ,value))
 
 (defun request-content-length (&optional (request *request*))
-  (parse-integer (request-header "Content-Length" request)))
+  (let ((header (request-header "Content-Length" request)))
+    (when header
+      (parse-integer header))))
 
 ;;  HTTP parser
 

@@ -75,7 +75,7 @@
 
 (defun split-request-uri-and-query (request)
   (declare (type request request))
-  (let* ((target (request-target% request))
+  (let* ((target (the simple-string (request-target% request)))
          (target-? (position #\? target))
          (uri (if target-?
                   (subseq target 0 target-?)
@@ -93,6 +93,7 @@
   (slot-value request 'uri))
 
 (defun uri-scheme (uri)
+  (declare (type simple-string uri))
   (let ((column (position #\: uri)))
     (unless (null column)
       (subseq uri 0 column))))
@@ -105,6 +106,7 @@
   (slot-value request 'scheme))
 
 (defun uri-host (uri)
+  (declare (type simple-string uri))
   (let ((host (search "://" uri)))
     (unless (null host)
       (incf host 3)
@@ -119,6 +121,7 @@
   (slot-value request 'host))
 
 (defun uri-dir (uri)
+  (declare (type simple-string uri))
   (let ((dir-end (position #\/ uri :from-end t)))
     (subseq uri 0 (or dir-end 0))))
 
@@ -357,7 +360,7 @@ The requested url "
   (rol-uri:%-encode string))
 
 (defun path-directory-p (path)
-  (declare (type string path))
+  (declare (type simple-string path))
   (let ((len (length path)))
     (when (< 0 len)
       (char= #\/ (char path (1- len))))))
@@ -378,6 +381,7 @@ The requested url "
       t)))
 
 (defun prefix-p (pre str)
+  (declare (type simple-string pre str))
   (and (<= (length pre) (length str))
        (string= pre str :end2 (length pre))))
 
@@ -385,7 +389,7 @@ The requested url "
   (let ((dirs)
         (files))
     (do-dir (df path)
-      (if (= +dt-dir+ (dirent-type df))
+      (if (= +dt-dir+ (the fixnum (dirent-type df)))
           (push (str (dirent-name df) "/") dirs)
           (push (dirent-name df) files)))
     (append (sort dirs #'string<)
@@ -441,12 +445,14 @@ The requested url "
   (fd-file-size (stream-fd stream)))
 
 (defun path-name (path)
+  (declare (type simple-string path))
   (let ((start (position #\/ path :from-end t)))
     (when start
       (subseq path (1+ start)))))
 
 (defun path-extension (path)
-  (let* ((name (path-name path))
+  (declare (type simple-string path))
+  (let* ((name (the simple-string (path-name path)))
          (start (position #\. name :from-end t)))
     (when start
       (ext (subseq  path start)))))
@@ -462,7 +468,9 @@ The requested url "
       (stream-copy in (reply-stream)))))
 
 (defun file-handler (local remote)
+  (declare (type simple-string local remote))
   (let ((uri (request-uri)))
+    (declare (type simple-string uri))
     (when (debug-p :file)
       (format t "uri ~S local ~S remote ~S~%" uri local remote)
       (force-output))
@@ -553,7 +561,7 @@ The requested url "
       (funcall (funcall *acceptor-loop* fd)))))
 
 (defun set-nonblocking (fd)
-  (let ((flags (fcntl:getfl fd)))
+  (let ((flags (the fixnum (fcntl:getfl fd))))
     (fcntl:setfl fd (logior fcntl:+o-nonblock+ flags))))
 
 ;(trace socket:socket socket:bind socket:bind-inet unistd:close unistd:c-close)

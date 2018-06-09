@@ -10,6 +10,7 @@
 (defparameter *init-threads* 8)
 
 (defun make-worker-threads (fd n pipe-in)
+  (declare (type fixnum n))
   (let ((threads ())
         (listen-fds ()))
     (dotimes (i n)
@@ -47,7 +48,7 @@
   (when (debug-p :thot)
     (format t " ~A~%" *worker-thread-for-fd*))
   (set-nonblocking fd)
-  (with-worker-threads (fd (1- *init-threads*))
+  (with-worker-threads (fd (1- (the fixnum *init-threads*)))
     (funcall (funcall *worker-thread-for-fd* fd))))
 
 (when bordeaux-threads:*supports-threads-p*

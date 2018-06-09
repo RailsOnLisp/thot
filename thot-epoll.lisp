@@ -104,7 +104,7 @@
          (babel-stream (reply-stream reply))
          (stream (stream-underlying-stream babel-stream)))
     (cond ((and (null (worker-reader-cont worker))
-                (= 0 (stream-output-length stream)))
+                (= 0 (the integer (stream-output-length stream))))
            (cond ((worker-keep-alive worker)
                   ;; read request body
                   (setf (worker-reader-cont worker)

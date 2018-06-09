@@ -14,6 +14,12 @@
     (defconstant +crlf+
       (coerce '(#\Return #\Newline) 'string))))
 
+;;  Methods
+
+(let ((request-methods '(get post put head)))
+  (defun http-method (x)
+    (find x request-methods :test #'string=)))
+
 ;;  Request
 
 (defclass request ()
@@ -185,7 +191,8 @@
       (with-readers-for stream
           ((method (char)
              (cond ((char= #\Space char)
-                    (setf (request-method% request) (get-buffer))
+                    (setf (request-method% request)
+                          (http-method (get-buffer)))
                     (target))
                    (t (stream-write buffer char)
                       (method))))

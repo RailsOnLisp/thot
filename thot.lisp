@@ -463,7 +463,7 @@ The requested url "
   (let* ((name (the simple-string (path-name path)))
          (start (position #\. name :from-end t)))
     (when start
-      (ext (subseq  path start)))))
+      (ext (subseq path start)))))
 
 (defun file (path)
   (let* ((ext (path-extension path))

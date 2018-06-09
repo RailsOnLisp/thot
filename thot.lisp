@@ -489,7 +489,7 @@ The requested url "
           (format t "local-path ~S~%" local-path)
           (force-output))
         (with-stat (stat nil) local-path
-          (when (s-isreg (stat-mode stat))
+          (unless (s-isreg (stat-mode stat))
             `(file ,local-path)))))))
 
 (defparameter *url-handlers*

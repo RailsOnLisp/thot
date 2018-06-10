@@ -440,9 +440,8 @@ The requested url "
         (when (debug-p :directory)
           (format t "subdir ~S local-path ~S~%" subdir local-path)
           (force-output))
-        (with-stat (stat nil) local-path
-          (when (s-isdir (stat-mode stat))
-            `(directory-index ,local ,remote ,subdir)))))))
+        (when (probe-dir local-path)
+          `(directory-index ,local ,remote ,subdir))))))
 
 (defun fd-file-size (fd)
   (let ((end (unistd:lseek fd 0 unistd:+seek-end+)))

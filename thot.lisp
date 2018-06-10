@@ -487,9 +487,8 @@ The requested url "
         (when (debug-p :file)
           (format t "local-path ~S~%" local-path)
           (force-output))
-        (with-stat (stat nil) local-path
-          (unless (s-isreg (stat-mode stat))
-            `(file ,local-path)))))))
+        (when (probe-file local-path)
+          `(file ,local-path))))))
 
 (defparameter *url-handlers*
   '((file-handler "/var/www/htdocs/" "/")

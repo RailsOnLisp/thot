@@ -577,6 +577,7 @@ The requested url "
   (let ((flags (the fixnum (fcntl:getfl fd))))
     (fcntl:setfl fd (logior fcntl:+o-nonblock+ flags))))
 
-;(trace socket:socket socket:bind socket:bind-inet unistd:close unistd:c-close)
+(trace socket:socket socket:bind socket:bind-inet unistd:close unistd:c-close)
 ;(trace header content)
 ;(trace request-cont file-handler directory-handler call-handler-form call-handler)
+;(untrace file-handler c-stat)

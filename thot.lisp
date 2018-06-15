@@ -389,12 +389,9 @@ The requested url "
       t)))
 
 (defun probe-file (path)
-  (when (with-stat (stat) path
-                   (s-isreg (the fixnum (stat-mode stat))))
-    (let ((filep (the fixnum (fcntl:c-open/2 path fcntl:+o-rdonly+))))
-      (unless (< filep 0)
-        (unistd:close filep)
-        t))))
+  (when (with-stat (stat nil) path
+          (s-isreg (the fixnum (stat-mode stat))))
+    (= 0 (the fixnum (unistd:c-access path unistd:+r-ok+)))))
 
 (defun prefix-p (pre str)
   (declare (type simple-string pre str))

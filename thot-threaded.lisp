@@ -51,9 +51,10 @@
   (with-worker-threads (fd (1- (the fixnum *init-threads*)))
     (funcall (funcall *worker-thread-for-fd* fd))))
 
-(when bordeaux-threads:*supports-threads-p*
-  (unless (boundp '*worker-thread-for-fd*)
-    (setq *worker-thread-for-fd* *acceptor-loop*))
-  (setq *acceptor-loop* 'acceptor-loop-threaded))
+(eval-when (:load-toplevel :execute)
+  (when bordeaux-threads:*supports-threads-p*
+    (unless (boundp '*worker-thread-for-fd*)
+      (setq *worker-thread-for-fd* *acceptor-loop*))
+    (setq *acceptor-loop* 'acceptor-loop-threaded)))
 
 ;(untrace start acceptor-loop-threaded request-loop read write set-nonblocking socket:socket socket:bind socket:listen socket:accept unistd:close unistd:select)

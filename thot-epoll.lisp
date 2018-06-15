@@ -188,10 +188,11 @@
                                (agent-out epoll agent))))))))))
     #'acceptor-loop-epoll-fun))
 
-(when (cffi:foreign-symbol-pointer "epoll_create")
-  (cond ((eq *acceptor-loop* 'acceptor-loop-simple)
-         (setq *acceptor-loop* 'acceptor-loop-epoll))
-        ((eq *acceptor-loop* 'acceptor-loop-threaded)
-         (setq *worker-thread-for-fd* 'acceptor-loop-epoll))))
+(eval-when (:load-toplevel :execute)
+  (when (cffi:foreign-symbol-pointer "epoll_create")
+    (cond ((eq *acceptor-loop* 'acceptor-loop-simple)
+           (setq *acceptor-loop* 'acceptor-loop-epoll))
+          ((eq *acceptor-loop* 'acceptor-loop-threaded)
+           (setq *worker-thread-for-fd* 'acceptor-loop-epoll)))))
 
 ;;(untrace socket:socket socket:bind socket:listen socket:accept unistd:close epoll:create epoll-add epoll-del acceptor-loop-epoll make-worker agent-in agent-out)

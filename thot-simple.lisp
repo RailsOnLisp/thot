@@ -28,10 +28,11 @@
                                (babel-output-stream
                                 (multi-buffered-output-stream
                                  (unistd-output-stream clientfd)))))
-                          (request-loop request-stream reply-stream)
-                          (stream-flush reply-stream))))))))
+                          (request-loop request-stream
+                                        reply-stream))))))))
       #'acceptor-loop-simple-fun)))
 
-(setq *acceptor-loop* 'acceptor-loop-simple)
+(eval-when (:load-toplevel :execute)
+  (setq *acceptor-loop* 'acceptor-loop-simple))
 
 ;(trace acceptor-loop-simple request-loop cffi-socket:accept unistd:write stream-flush stream-flush-output unistd:close)

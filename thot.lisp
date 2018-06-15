@@ -479,6 +479,9 @@ The requested url "
       (end-headers)
       (stream-copy in (reply-stream)))))
 
+(defparameter *index-files*
+  '("index.html"))
+
 (defun file-handler (local remote)
   (declare (type simple-string local remote))
   (let ((uri (request-uri)))
@@ -492,8 +495,18 @@ The requested url "
         (when (debug-p :file)
           (format t "local-path ~S~%" local-path)
           (force-output))
-        (when (probe-file local-path)
-          `(file ,local-path))))))
+        (with-stat (stat nil) local-path
+          (let ((mode (the fixnum (stat-mode stat))))
+            (cond ((s-isdir mode)
+                   (dolist (index *index-files*)
+                     (let ((index-path (str local-path index)))
+                       (when (probe-file index-path)
+                         (return `(file ,index-path))))))
+                  ((s-isreg mode)
+                   (when (= 0 (the fixnum
+                                   (unistd:c-access local-path
+                                                    unistd:+r-ok+)))
+                     `(file ,local-path))))))))))
 
 (defparameter *url-handlers*
   '((file-handler "/var/www/htdocs/" "/")

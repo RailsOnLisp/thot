@@ -71,10 +71,10 @@
                 :type (or null function))
    (reply :initarg :reply
           :accessor worker-reply
-          :type 'reply)
+          :type reply)
    (request :initarg :request
             :accessor worker-request
-            :type 'request)))
+            :type request)))
 
 (defmethod agent-epoll-events ((worker worker))
   (logior epoll:+in+ epoll:+out+ epoll:+err+))

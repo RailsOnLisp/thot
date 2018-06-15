@@ -519,7 +519,7 @@ The requested url "
                 (when (find errno '(errno:+epipe+
                                     errno:+econnreset+))
                   (when (debug-p :thot)
-                    (format t "err ~&~A~%" condition)
+                    (format t "~&WARN request-cont ~A~%" condition)
                     (force-output))
                   (return-from request-cont))))))
         (loop

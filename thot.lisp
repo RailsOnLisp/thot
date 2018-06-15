@@ -388,6 +388,12 @@ The requested url "
       (dirent:closedir dirp)
       t)))
 
+(defun probe-file (path)
+  (let ((filep (fcntl:c-open/2 path fcntl:+o-rdonly+)))
+    (unless (< filep 0)
+      (unistd:close filep)
+      t)))
+
 (defun prefix-p (pre str)
   (declare (type simple-string pre str))
   (and (<= (length pre) (length str))

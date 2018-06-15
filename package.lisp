@@ -31,6 +31,7 @@
    :html-entities
    :str
    :unistd-stream)
+  (:shadow #:probe-file)
   #.(cl-stream:shadowing-import-from)
   (:export
    #:request

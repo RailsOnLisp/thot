@@ -550,9 +550,16 @@ The requested url "
               :keep-alive
               nil))))))
 
+(defvar *acceptor-loop*)
+(declaim (type function *acceptor-loop*))
+
+(defun main-loop (fd)
+  (funcall *acceptor-loop* fd))
+
 (defvar *stop* nil)
 
-(defvar *acceptor-loop*)
+(defvar *main-loop* #'main-loop)
+(declaim (type function *acceptor-loop*))
 
 (defvar *host*)
 
@@ -569,8 +576,8 @@ The requested url "
       (socket:bind-inet fd host port)
       (socket:listen fd 128)
       (when (debug-p :thot)
-        (msg debug *acceptor-loop*))
-      (funcall (funcall *acceptor-loop* fd)))))
+        (msg debug *main-loop*))
+      (funcall *main-loop* fd))))
 
 (defun set-nonblocking (fd)
   (let ((flags (the fixnum (fcntl:getfl fd))))

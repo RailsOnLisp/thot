@@ -167,31 +167,29 @@
 
 (defun acceptor-loop-epoll (listenfd &optional pipe)
   (declare (type (unsigned-byte 31) listenfd))
-  (labels ((acceptor-loop-epoll-fun ()
-             (epoll:with (epoll-fd)
-               (let ((epoll (make-instance 'epoll-infos :fd epoll-fd)))
-                 (epoll-add epoll (make-instance 'acceptor :fd listenfd))
-                 (when pipe
-                   (epoll-add epoll (make-instance 'control :fd pipe)))
-                 (loop
-                    (when *stop*
-                      (return))
-                    (epoll:wait (events fd epoll-fd)
-                      (let ((agent (get-agent epoll fd)))
-                        (unless agent (error "bad epoll fd ~S" fd))
-                        (cond ((not (= 0 (logand epoll:+err+ events)))
-                               (agent-error epoll agent))
-                              ((not (= 0 (logand epoll:+in+ events)))
-                               (agent-in epoll agent))
-                              ((not (= 0 (logand epoll:+out+ events)))
-                               (agent-out epoll agent))))))))))
-    #'acceptor-loop-epoll-fun))
+  (epoll:with (epoll-fd)
+    (let ((epoll (make-instance 'epoll-infos :fd epoll-fd)))
+      (epoll-add epoll (make-instance 'acceptor :fd listenfd))
+      (when pipe
+        (epoll-add epoll (make-instance 'control :fd pipe)))
+      (loop
+         (when *stop*
+           (return))
+         (epoll:wait (events fd epoll-fd)
+                     (let ((agent (get-agent epoll fd)))
+                       (unless agent (error "bad epoll fd ~S" fd))
+                       (cond ((not (= 0 (logand epoll:+err+ events)))
+                              (agent-error epoll agent))
+                             ((not (= 0 (logand epoll:+in+ events)))
+                              (agent-in epoll agent))
+                             ((not (= 0 (logand epoll:+out+ events)))
+                              (agent-out epoll agent)))))))))
+
+(defun maybe-configure-epoll ()
+  (when (cffi:foreign-symbol-pointer "epoll_create")
+    (setf *acceptor-loop* #'acceptor-loop-epoll)))
 
 (eval-when (:load-toplevel :execute)
-  (when (cffi:foreign-symbol-pointer "epoll_create")
-    (cond ((eq *acceptor-loop* 'acceptor-loop-simple)
-           (setq *acceptor-loop* 'acceptor-loop-epoll))
-          ((eq *acceptor-loop* 'acceptor-loop-threaded)
-           (setq *worker-thread-for-fd* 'acceptor-loop-epoll)))))
+  (maybe-configure-epoll))
 
 ;;(untrace socket:socket socket:bind socket:listen socket:accept unistd:close epoll:create epoll-add epoll-del acceptor-loop-epoll make-worker agent-in agent-out)

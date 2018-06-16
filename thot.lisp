@@ -585,8 +585,7 @@ The requested url "
       (socket:bind-inet fd host port)
       (socket:listen fd 128)
       (when (debug-p :thot)
-        (format t "~A~%" *acceptor-loop*)
-        (force-output))
+        (msg debug *acceptor-loop*))
       (funcall (funcall *acceptor-loop* fd)))))
 
 (defun set-nonblocking (fd)

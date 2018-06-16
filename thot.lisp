@@ -9,15 +9,6 @@
 ;;(setf (debug-p :directory) t)
 ;;(setf (debug-p :file) t)
 
-(defmacro msg (level &rest parts)
-  `(progn
-     (write-str *standard-output*
-                ,(symbol-name level)
-                #\Space
-                ,@parts
-                #\Newline)
-     (force-output)))
-
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (boundp '+crlf+)
     (defconstant +crlf+

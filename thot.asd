@@ -28,7 +28,8 @@
                "unistd-stream")
   :components
   ((:file "package")
-   (:file "mime" :depends-on ("package"))
+   (:file "mime" :depends-on ("msg"))
+   (:file "msg" :depends-on ("package"))
    (:file "thot" :depends-on ("mime"))
    (:file "thot-select" :depends-on ("thot"))
    (:file "thot-threaded" :depends-on ("thot"))

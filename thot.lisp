@@ -9,6 +9,15 @@
 ;;(setf (debug-p :directory) t)
 ;;(setf (debug-p :file) t)
 
+(defmacro msg (level &rest parts)
+  `(progn
+     (write-str *standard-output*
+                ,(symbol-name level)
+                #\Space
+                ,@parts
+                #\Newline)
+     (force-output)))
+
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (unless (boundp '+crlf+)
     (defconstant +crlf+
@@ -211,12 +220,9 @@
                       (version))))
            (version-lf (char)
              (cond ((char= #\Newline char)
-                    (when (debug-p (or :thot :http))
-                      (format t "~&thot: ~A ~A ~A~%"
-                              (request-method% request)
-                              (request-target% request)
-                              (request-http-version% request))
-                      (force-output))
+                    (msg info (request-method% request) " "
+                         (request-target% request) " "
+                         (request-http-version% request))
                     (next-header))
                    (t (error "Missing request line LF"))))
            (next-header (char)
@@ -242,8 +248,7 @@
            (header-lf (char)
              (cond ((char= #\Newline char)
                     (when (debug-p (or :thot :http))
-                      (format t "~&thot: ~A: ~A~%" name value)
-                      (force-output))
+                      (msg debug name ": " value))
                     (setf (request-header name request) value)
                     (next-header))
                    (t (error "Missing header LF"))))
@@ -423,8 +428,7 @@ The requested url "
     (dolist (name sorted)
       (let* ((url (str remote dir (url-encode name))))
         (when (debug-p :directory)
-          (format t "name ~S url ~S~%" name url)
-          (force-output))
+          (msg directory "name " name " url " url))
         (content "   <li><a href=\"" (h url) "\">"
                  (h name)
                  "</a></li>
@@ -437,14 +441,12 @@ The requested url "
 (defun directory-handler (local remote)
   (let ((dir (path-as-directory (request-uri))))
     (when (debug-p :directory)
-      (format t "dir ~S local ~S remote ~S~%" dir local remote)
-      (force-output))
+      (msg directory "dir " dir " local " local " remote " remote))
     (when (prefix-p remote dir)
       (let* ((subdir (subseq dir (length remote)))
              (local-path (str local subdir)))
         (when (debug-p :directory)
-          (format t "subdir ~S local-path ~S~%" subdir local-path)
-          (force-output))
+          (msg directory "subdir " subdir " local-path " local-path))
         (when (probe-dir local-path)
           `(directory-index ,local ,remote ,subdir))))))
 
@@ -487,14 +489,12 @@ The requested url "
   (let ((uri (request-uri)))
     (declare (type simple-string uri))
     (when (debug-p :file)
-      (format t "uri ~S local ~S remote ~S~%" uri local remote)
-      (force-output))
+      (msg file "uri " uri " local " local " remote " remote))
     (when (prefix-p remote uri)
       (let* ((path (subseq uri (length remote)))
              (local-path (str local path)))
         (when (debug-p :file)
-          (format t "local-path ~S~%" local-path)
-          (force-output))
+          (msg file "local-path " local-path))
         (with-stat (stat nil) local-path
           (let ((mode (the fixnum (stat-mode stat))))
             (cond ((s-isdir mode)
@@ -533,15 +533,14 @@ The requested url "
                   (when (find errno '(errno:+epipe+
                                       errno:+econnreset+))
                     (when (debug-p :thot)
-                      (format t "~&WARN request-cont ~A~%" condition)
-                      (force-output))
+                      (msg warn "request-handler: " condition))
                     (return-from request-cont))))))
           (loop
              (let ((handler-form (pop handlers)))
                (unless handler-form (return))
                (let ((handler (call-handler-form handler-form)))
                  (when (debug-p :thot)
-                   (format t "~&~S -> ~S~%" handler-form handler)
+                   (format t "~A ~S -> ~S~%" 'debug handler-form handler)
                    (force-output))
                  (when handler
                    (call-handler handler)
@@ -576,9 +575,7 @@ The requested url "
 (defvar *port*)
 
 (defun start (&key (host "0.0.0.0") (port 8000))
-  (when (debug-p :thot)
-    (format t "~&Thot start ~A ~A~%" host port)
-    (force-output))
+  (msg info "Thot start " host ":" port)
   (setq *stop* nil)
   (let ((*host* host)
         (*port* port))

@@ -34,6 +34,7 @@
   (:shadow #:probe-file)
   #.(cl-stream:shadowing-import-from)
   (:export
+   #:msg
    #:request
    #:*request*
    #:request-socket

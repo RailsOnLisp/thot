@@ -46,7 +46,7 @@
 (defun acceptor-loop-threaded (fd)
   (declare (type (unsigned-byte 31) fd))
   (when (debug-p :thot)
-    (format t " ~A~%" *worker-thread-for-fd*))
+    (msg debug " " *acceptor-loop*))
   (set-nonblocking fd)
   (with-worker-threads (fd (1- (the fixnum *init-threads*)))
     (funcall (funcall *worker-thread-for-fd* fd))))

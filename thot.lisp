@@ -545,6 +545,7 @@ The requested url "
 (declaim (type function *acceptor-loop*))
 
 (defun main-loop (fd)
+  (msg info " " *acceptor-loop*)
   (funcall *acceptor-loop* fd))
 
 (defvar *stop* nil)

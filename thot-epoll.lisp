@@ -109,8 +109,7 @@
                   ;; read request body
                   (setf (worker-reader-cont worker)
                         (request-reader (reset-request request)
-                                        (reset-reply reply)
-                                        #'request-cont))
+                                        (reset-reply reply)))
                   (agent-in epoll worker))
                  (t
                   (epoll-del epoll worker))))
@@ -142,7 +141,7 @@
                          (unistd-output-stream fd))))
          (request (make-instance 'request :stream request-stream))
          (reply (make-instance 'reply :stream reply-stream))
-         (reader-cont (request-reader request reply #'request-cont)))
+         (reader-cont (request-reader request reply)))
     (make-instance 'worker
                    :addr addr
                    :fd fd

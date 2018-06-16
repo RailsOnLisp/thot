@@ -184,7 +184,7 @@
     `(labels ,(mapcar #'reader definitions)
        ,@body)))
 
-(defun request-reader (request reply cont)
+(defun request-reader (request reply)
   "Returns a HTTP request reader function which itself returns either :
  :EOF if end of stream was reached, or
  a closure if read would block, or
@@ -254,7 +254,7 @@
                    (t (error "Missing header LF"))))
            (end-of-headers (char)
              (cond ((char= #\Newline char)
-                    (funcall cont request reply))
+                    (request-handler request reply))
                    (t (error "Missing end of headers LF")))))
         #'method))))
 
@@ -519,7 +519,7 @@ The requested url "
 (defun call-handler (list)
   (apply (first list) (rest list)))
 
-(defun request-cont (request reply)
+(defun request-handler (request reply)
   (let ((handlers *url-handlers*)
         (*request* request)
         (*reply* reply))
@@ -534,7 +534,7 @@ The requested url "
                                       errno:+econnreset+))
                     (when (debug-p :thot)
                       (msg warn "request-handler: " condition))
-                    (return-from request-cont))))))
+                    (return-from request-handler))))))
           (loop
              (let ((handler-form (pop handlers)))
                (unless handler-form (return))
@@ -595,5 +595,5 @@ The requested url "
 
 (trace socket:socket socket:bind socket:bind-inet unistd:close unistd:c-close)
 ;(trace header content)
-;(trace request-cont file-handler directory-handler call-handler-form call-handler)
+;(trace request-handler file-handler directory-handler call-handler-form call-handler)
 ;(untrace file-handler c-stat)

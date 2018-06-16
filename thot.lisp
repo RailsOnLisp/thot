@@ -514,10 +514,10 @@ The requested url "
     (404-not-found-handler)))
 
 (defun call-handler-form (list)
-  (apply (first list) (rest list)))
+  (apply (fdefinition (first list)) (rest list)))
 
 (defun call-handler (list)
-  (apply (first list) (rest list)))
+  (apply (fdefinition (first list)) (rest list)))
 
 (defun request-handler (request reply)
   (let ((handlers *url-handlers*)

@@ -62,4 +62,4 @@
 (eval-when (:load-toplevel :execute)
   (maybe-configure-threaded))
 
-;(untrace start acceptor-loop-threaded request-loop read write set-nonblocking socket:socket socket:bind socket:listen socket:accept unistd:close unistd:select)
+;(untrace start acceptor-loop-threaded read write set-nonblocking socket:socket socket:bind socket:listen socket:accept unistd:close unistd:select)

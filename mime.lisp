@@ -10,7 +10,7 @@
 
 (defgeneric ext (x))
 
-(defmethod ext ((x string))
+(defmethod ext ((x simple-string))
   (cond ((string= "" x))
         ((char= #\. (char x 0))
          (let ((sym (intern x :file-extensions)))

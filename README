@@ -1,6 +1,14 @@
+Threaded HTTP server supporting EPOLL in Common Lisp
 
-(asdf:load-system :thot)
+Thot has the following acceptor loops :
+    epoll  unthreaded, using epoll(7) on Linux
+   select  unthreaded, using select(2)
+ threaded  threaded defaults to 8 threads, see *INIT-THREADS*
 
-(thot:start)
+The threaded loop has the following worker loops :
+    epoll  using epoll(7) on Linux
+   select  using select(2)
 
-(thot:start :port 8000)
+Usage :
+    (asdf:load-system :thot)
+    (thot:start)

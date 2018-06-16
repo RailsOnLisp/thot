@@ -552,22 +552,6 @@ The requested url "
 
 (defvar *stop* nil)
 
-(defun request-loop (request-stream reply-stream)
-  (loop
-     (when *stop*
-       (return))
-     (handler-case
-         (let* ((req (make-instance 'request :stream request-stream))
-                (reply (make-instance 'reply :stream reply-stream))
-                (reader (request-reader req reply #'request-cont))
-                (result (funcall reader)))
-           (unless (eq :keep-alive result)
-             (return)))
-       (warning (w)
-         (format t "WARN ~A" w)
-         (force-output)
-         (continue)))))
-
 (defvar *acceptor-loop*)
 
 (defvar *host*)

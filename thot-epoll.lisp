@@ -91,7 +91,9 @@
       (let ((result (handler-case (funcall reader-cont)
                       (warning (x) (format t "~A~%" x) :eof))))
         (cond ((eq :eof result) (epoll-del epoll worker))
-              ((eq nil result) (setf (worker-reader-cont worker) nil))
+              ((eq nil result)
+               (setf (worker-reader-cont worker) nil)
+               (stream-flush-output (reply-stream (worker-reply worker))))
               ((eq :keep-alive result) (setf (worker-keep-alive worker) t
                                              (worker-reader-cont worker) nil)
                :keep-alive)
@@ -109,8 +111,7 @@
                   ;; read request body
                   (setf (worker-reader-cont worker)
                         (request-reader (reset-request request)
-                                        (reset-reply reply)))
-                  (agent-in epoll worker))
+                                        (reset-reply reply))))
                  (t
                   (epoll-del epoll worker))))
           (t
@@ -166,7 +167,7 @@
 ;;  Thread event loop
 
 (defun acceptor-loop-epoll (listenfd &optional pipe)
-  (declare (type (unsigned-byte 31) listenfd))
+  (declare (type unistd:file-descriptor listenfd))
   (epoll:with (epoll-fd)
     (let ((epoll (make-instance 'epoll-infos :fd epoll-fd)))
       (epoll-add epoll (make-instance 'acceptor :fd listenfd))

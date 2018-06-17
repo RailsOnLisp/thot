@@ -538,7 +538,7 @@ The requested url "
                    (force-output))
                  (when handler
                    (call-handler handler)
-                   (stream-flush (reply-stream% reply))
+                   (stream-flush-output (reply-stream% reply))
                    (return)))))
           (if (string-equal "keep-alive" (request-header 'connection))
               :keep-alive

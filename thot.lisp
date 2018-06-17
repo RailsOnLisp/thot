@@ -554,7 +554,7 @@ The requested url "
 (defvar *stop* nil)
 
 (defvar *main-loop* #'main-loop)
-(declaim (type function *acceptor-loop*))
+(declaim (type function *main-loop*))
 
 (defvar *host*)
 

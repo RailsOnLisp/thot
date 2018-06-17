@@ -43,8 +43,7 @@
 
 (defun main-loop-threaded (fd)
   (declare (type unistd:file-descriptor fd))
-  (when (debug-p :thot)
-    (msg debug " " *acceptor-loop*))
+  (msg info " " *acceptor-loop*)
   (set-nonblocking fd)
   (with-worker-threads (fd (1- (the fixnum *init-threads*)))
     (funcall *acceptor-loop* fd)))

@@ -83,7 +83,7 @@
   ())
 
 (defmethod agent-error ((epoll epoll-infos) (worker worker))
-  (error 'worker-error :agent worker))
+  (epoll-del epoll worker))
 
 (defmethod agent-in ((epoll epoll-infos) (worker worker))
   (let ((reader-cont (worker-reader-cont worker)))

@@ -14,6 +14,7 @@
                 (reply (make-instance 'reply :stream reply-stream))
                 (reader (request-reader req reply))
                 (result (funcall (the function reader))))
+           (stream-flush reply-stream)
            (unless (eq :keep-alive result)
              (return)))
        (warning (w)

@@ -452,20 +452,23 @@ The requested url "
 (defun path-name (path)
   (declare (type simple-string path))
   (let ((start (position #\/ path :from-end t)))
-    (when start
-      (subseq path (1+ start)))))
+    (if start
+        (subseq path (1+ start))
+        path)))
 
 (defun path-extension (path)
   (declare (type simple-string path))
   (let* ((name (the simple-string (path-name path)))
          (start (position #\. name :from-end t)))
     (when start
-      (ext (subseq path start)))))
+      (ext (subseq name start)))))
 
 (defun file (path)
   (let* ((ext (path-extension path))
          (type (mime-type ext)))
-    (header "Content-Type: " type)
+    (when (debug-p :file)
+      (msg debug "path " path " ext " ext " type " type))
+    (header "Content-Type: " (string-downcase (symbol-name type)))
     (with-stream (in (unistd-stream-open path :read t))
       (let ((size (stream-file-size in)))
         (header "Content-Length: " size))
@@ -562,6 +565,7 @@ The requested url "
   (setq *stop* nil)
   (let ((*host* host)
         (*port* port))
+    (configure-mime)
     (socket:with-socket (fd socket:+af-inet+
                             socket:+sock-stream+
                             0)

@@ -13,7 +13,7 @@
 (defmethod ext ((x string))
   (cond ((string= "" x))
         ((char= #\. (char x 0))
-         (let ((sym (intern x :file-extensions)))
+         (let ((sym (intern (string-upcase x) :file-extensions)))
            (export sym :file-extensions)
            sym))
         (t
@@ -42,21 +42,25 @@
       (cl:read stream nil eof))))
 
 (defun load-mime.types (path)
-  (let ((in (cl:open path)))
-    (unwind-protect
-         (let ((eof (gensym))
-               (mime-type nil))
-           (loop
-              (let ((sym (safe-read in eof)))
-                (cond ((eq eof sym) (return))
-                      ((not (symbolp sym)))
-                      ((mime-type-p sym) (setf mime-type sym))
-                      (mime-type (let ((ext (ext sym)))
-                                   (when (debug-p :mime)
-                                     (msg mime ext " " mime-type))
-                                   (setf (mime-type ext)
-                                         mime-type)))))))
-      (cl:close in))))
+  (when (probe-file path)
+    (msg info "loading mime types from " path)
+    (let ((in (cl:open path :if-does-not-exist nil)))
+      (unwind-protect
+           (let ((eof (gensym))
+                 (mime-type nil))
+             (loop
+                (let ((sym (safe-read in eof)))
+                  (cond ((eq eof sym) (return))
+                        ((not (symbolp sym)))
+                        ((mime-type-p sym) (setf mime-type sym))
+                        (mime-type (let ((ext (ext sym)))
+                                     (when (debug-p :mime)
+                                       (msg mime ext " " mime-type))
+                                     (setf (mime-type ext)
+                                           mime-type)))))))
+        (cl:close in)))))
 
-#+openbsd
-(load-mime.types "/usr/share/misc/mime.types")
+(defun configure-mime ()
+  (load-mime.types "/etc/mime.types")
+  #+openbsd
+  (load-mime.types "/usr/share/misc/mime.types"))

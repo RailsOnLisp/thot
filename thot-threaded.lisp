@@ -54,11 +54,12 @@
   (and bordeaux-threads:*supports-threads-p*
        (not *disable-threads*)))
 
-(defun maybe-configure-threaded ()
-  (when (threaded-p)
-    (setf *main-loop* #'main-loop-threaded)))
+(defun configure-threads ()
+  (if (threaded-p)
+      (setf *main-loop* #'main-loop-threaded)
+      (setf *main-loop* #'main-loop)))
 
 (eval-when (:load-toplevel :execute)
-  (maybe-configure-threaded))
+  (configure-threads))
 
 ;(untrace start acceptor-loop-threaded read write set-nonblocking socket:socket socket:bind socket:listen socket:accept unistd:close unistd:select)

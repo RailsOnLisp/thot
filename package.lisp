@@ -34,25 +34,29 @@
   (:shadow #:probe-file)
   #.(cl-stream:shadowing-import-from)
   (:export
-   #:msg
-   #:request
-   #:*request*
-   #:request-socket
-   #:request-method
-   #:request-url
-   #:request-http-version
-   #:request-headers
-   #:request-header
-   #:reply
+   #:*disable-threads*
    #:*reply*
-   #:reply-status
-   #:reply-headers
-   #:reply-header
-   #:reply-headers-sent
-   #:reply-content-length
-   #:status
-   #:header
-   #:end-headers
+   #:*request*
+   #:configure-threads
    #:content
+   #:end-headers
+   #:header
+   #:maybe-configure-epoll
+   #:msg
+   #:reply
+   #:reply-content-length
+   #:reply-header
+   #:reply-headers
+   #:reply-headers-sent
+   #:reply-status
+   #:request
+   #:request-header
+   #:request-headers
+   #:request-http-version
+   #:request-method
+   #:request-socket
+   #:request-url
    #:start
-   #:start-threaded))
+   #:start-threaded
+   #:status
+   ))

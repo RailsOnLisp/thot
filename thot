@@ -1,2 +1,9 @@
+#!/usr/local/bin/sbcl --script
+(declaim (optimize (debug 3) (safety 3) (speed 3)))
+(load "../../fare/asdf/build/asdf")
+(load "../../thodg/repo/repo")
+(repo:boot)
 (asdf:load-system :thot)
+(setf thot:*disable-threads* t)
+(thot:configure-threads)
 (thot:start)

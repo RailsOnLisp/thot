@@ -54,7 +54,7 @@
                         ((not (symbolp sym)))
                         ((mime-type-p sym) (setf mime-type sym))
                         (mime-type (let ((ext (ext sym)))
-                                     (when (debug-p :mime)
+                                     (when (debug-p :mime.types)
                                        (msg mime ext " " mime-type))
                                      (setf (mime-type ext)
                                            mime-type)))))))

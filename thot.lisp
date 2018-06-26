@@ -443,9 +443,8 @@ The requested url "
           `(directory-index ,local ,remote ,subdir))))))
 
 (defun fd-file-size (fd)
-  (let ((end (unistd:lseek fd 0 unistd:+seek-end+)))
-    (unistd:lseek fd 0 unistd:+seek-set+)
-    end))
+  (with-fstat (stat) fd
+    (stat-size stat)))
 
 (defun stream-file-size (stream)
   (fd-file-size (stream-fd stream)))
@@ -472,9 +471,10 @@ The requested url "
     (header "Content-Type: " (string-downcase (symbol-name type)))
     (with-stream (in (unistd-stream-open path :read t))
       (let ((size (stream-file-size in)))
-        (header "Content-Length: " size))
-      (end-headers)
-      (stream-copy in (reply-stream)))))
+        (header "Content-Length: " size)
+        (end-headers)
+        (unless (= 0 size)
+          (stream-copy in (reply-stream)))))))
 
 (defparameter *index-files*
   '("index.html"))

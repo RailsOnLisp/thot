@@ -494,7 +494,7 @@ The requested url "
           (let ((mode (the fixnum (stat-mode stat))))
             (cond ((s-isdir mode)
                    (dolist (index *index-files*)
-                     (let ((index-path (str local-path index)))
+                     (let ((index-path (str local-path "/" index)))
                        (when (probe-file index-path)
                          (return `(file ,index-path))))))
                   ((s-isreg mode)

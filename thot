@@ -3,6 +3,8 @@
 (load "../../fare/asdf/build/asdf")
 (load "../../thodg/repo/repo")
 (repo:boot)
+(asdf:load-system :cl-stream)
+(setf cl-stream:*stream-default-buffer-size* (* 1024 1024))
 (asdf:load-system :thot)
 (setf thot:*disable-threads* t)
 (thot:configure-threads)

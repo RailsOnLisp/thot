@@ -518,32 +518,32 @@ The requested url "
   (let ((handlers *url-handlers*)
         (*request* request)
         (*reply* reply))
-    (ignore-errors
-      (with-simple-restart (continue "Continue")
-        (handler-bind
-            ((cffi-errno:errno-error
-              (lambda (condition)
-                (let ((errno (the fixnum
-                                  (errno:errno-error-errno condition))))
-                  (when (find errno '(errno:+epipe+
-                                      errno:+econnreset+))
-                    (when (debug-p :thot)
-                      (msg warn "request-handler: " condition))
-                    (return-from request-handler))))))
-          (loop
-             (let ((handler-form (pop handlers)))
-               (unless handler-form (return))
-               (let ((handler (call-handler-form handler-form)))
-                 (when (debug-p :thot)
-                   (format t "~A ~S -> ~S~%" 'debug handler-form handler)
-                   (force-output))
-                 (when handler
-                   (call-handler handler)
-                   (stream-flush-output (reply-stream% reply))
-                   (return)))))
-          (if (string-equal "keep-alive" (request-header 'connection))
-              :keep-alive
-              nil))))))
+    (with-simple-restart (continue "Continue")
+      (handler-bind
+          ((cffi-errno:errno-error
+            (lambda (condition)
+              (let ((errno (the fixnum
+                                (errno:errno-error-errno condition))))
+                (when (find errno '(errno:+epipe+
+                                    errno:+econnreset+))
+                  (when (debug-p :thot)
+                    (msg warn "request-handler: " condition))
+                  (return-from request-handler))))))
+        (loop
+           (let ((handler-form (pop handlers)))
+             (unless handler-form (return))
+             (let ((handler (call-handler-form handler-form)))
+               (when (debug-p :thot)
+                 (format t "~A ~S -> ~S~%" 'debug handler-form handler)
+                 (force-output))
+               (when handler
+                 (call-handler handler)
+                 (stream-flush-output (reply-stream% reply))
+                 (return)))))
+        (if (string-equal "keep-alive" (request-header 'connection))
+            :keep-alive
+            nil)))
+    nil))
 
 (defvar *acceptor-loop*)
 (declaim (type function *acceptor-loop*))

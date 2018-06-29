@@ -8,4 +8,5 @@
 (asdf:load-system :thot)
 (setf thot:*disable-threads* t)
 (thot:configure-threads)
+;(thot:maybe-configure-epoll)
 (thot:start)

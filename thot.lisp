@@ -27,6 +27,8 @@
   ((stream :initarg :stream
            :reader request-stream%
            :type stream)
+   (remote-addr :initarg :remote-addr
+                :accessor request-remote-addr%)
    (method :initarg :method
            :accessor request-method%
            :type (or null symbol))
@@ -39,6 +41,9 @@
    (headers :initform (make-hash-table :test 'equalp :size 32)
             :reader request-headers%
             :type hash-table)
+   (data :initform nil
+         :accessor request-data%
+         :type (or null string))
    (uri :accessor request-uri%
         :type (or null string))
    (scheme :type (or null string))
@@ -54,6 +59,7 @@
   (setf (request-method% request) nil
         (request-target% request) nil
         (request-http-version% request) nil
+        (request-data% request) nil
         (request-uri% request) nil
         (request-query% request) nil)
   (clrhash (request-headers% request))
@@ -62,6 +68,10 @@
 (defun request-stream (&optional (request *request*))
   (declare (type request request))
   (request-stream% request))
+
+(defun request-remote-addr (&optional (request *request*))
+  (declare (type request request))
+  (request-remote-addr% request))
 
 (defun request-method (&optional (request *request*))
   (declare (type request request))
@@ -146,15 +156,22 @@
 
 (defun request-header (header-name &optional (request *request*))
   (declare (type request request))
-  (gethash header-name (request-headers% request)))
+  (gethash (string-downcase header-name)
+           (request-headers% request)))
 
-(defsetf request-header (header-name &optional (request '*request*)) (value)
-  `(setf (gethash ,header-name (request-headers ,request)) ,value))
+(defsetf request-header (header-name &optional (request '*request*))
+    (value)
+  `(setf (gethash (string-downcase ,header-name)
+                  (request-headers% ,request)) ,value))
 
 (defun request-content-length (&optional (request *request*))
-  (let ((header (request-header "Content-Length" request)))
+  (let ((header (request-header "content-length" request)))
     (when header
       (parse-integer header))))
+
+(defun request-data (&optional (request *request*))
+  (declare (type request request))
+  (request-data% request))
 
 ;;  HTTP parser
 
@@ -186,7 +203,8 @@
   (let ((stream (request-stream request))
         (buffer (string-output-stream))
         (name "")
-        (value ""))
+        (value "")
+        (length nil))
     (flet ((get-buffer ()
              (prog1 (sequence-output-stream-sequence buffer)
                (sequence-output-stream-reset buffer))))
@@ -223,7 +241,7 @@
                       (header-name))))
            (header-name (char)
              (cond ((char= #\: char)
-                    (setq name (get-buffer))
+                    (setq name (string-downcase (get-buffer)))
                     (header-spaces))
                    (t (stream-write buffer char)
                       (header-name))))
@@ -233,21 +251,32 @@
                       (header-value))))
            (header-value (char)
              (cond ((char= #\Return char)
-                    (setq value (get-buffer))
+                    (setf value (get-buffer))
                     (header-lf))
                    (t (stream-write buffer char)
                       (header-value))))
            (header-lf (char)
-             (cond ((char= #\Newline char)
-                    (when (debug-p (or :thot :http))
-                      (msg debug name ": " value))
-                    (setf (request-header name request) value)
-                    (next-header))
-                   (t (error "Missing header LF"))))
+             (unless (char= #\Newline char)
+               (error "Missing header LF"))
+             (when (debug-p (or :thot :http))
+               (msg debug name " <- " value))
+             (setf (request-header name request) value
+                   value "")
+             (next-header))
            (end-of-headers (char)
-             (cond ((char= #\Newline char)
-                    (request-handler request reply))
-                   (t (error "Missing end of headers LF")))))
+             (unless (char= #\Newline char)
+               (error "Missing end of headers LF"))
+             (setf length (request-content-length request))
+             (if (and length (< 0 length))
+                 (data)
+                 (request-handler request reply)))
+           (data (char)
+                 (stream-write buffer char)
+                 (cond ((= 0 (decf length))
+                        (setf (request-data% request) (get-buffer))
+                        (request-handler request reply))
+                       (t
+                        (data)))))
         #'method))))
 
 ;;  Reply
@@ -308,15 +337,7 @@
   (parse-integer (reply-header 'content-length reply)))
 
 (defun status (line)
-  (let ((status (reply-status)))
-    (when status
-      (error 'status-already-sent status line)))
-  (setf (reply-status) line)
-  (let ((stream (reply-stream)))
-    (stream-write-sequence stream (request-http-version))
-    (stream-write stream #\Space)
-    (stream-write-sequence stream line)
-    (stream-write-sequence stream +crlf+)))
+  (setf (reply-status) line))
 
 (defun header (&rest parts)
   (unless (reply-status)
@@ -329,15 +350,20 @@
            (when (endp (rest headers))
              (setf (rest headers) (list line))
              (return))
-           (pop headers)))
-    (let ((stream (reply-stream)))
-      (stream-write-sequence stream line)
-      (stream-write-sequence stream +crlf+))))
+           (pop headers)))))
 
 (defun end-headers ()
   (unless (reply-headers-sent)
     (setf (reply-headers-sent) t)
-    (header "")))
+    (header "")
+    (let ((stream (reply-stream)))
+      (stream-write-sequence stream (request-http-version))
+      (stream-write stream #\Space)
+      (stream-write-sequence stream (reply-status))
+      (stream-write-sequence stream +crlf+)
+      (dolist (header (reply-headers))
+        (stream-write-sequence stream header)
+        (stream-write-sequence stream +crlf+)))))
 
 (defun content (&rest parts)
   (end-headers)
@@ -470,7 +496,7 @@ The requested url "
       (msg debug "path " path " ext " ext " type " type))
     (header "Content-Type: " (string-downcase (symbol-name type)))
     (with-stream (in (unistd-stream-open path :read t))
-      (let ((size (stream-file-size in)))
+      (let ((size (the integer (stream-file-size in))))
         (header "Content-Length: " size)
         (end-headers)
         (unless (= 0 size)

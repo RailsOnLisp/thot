@@ -17,7 +17,7 @@
                "bordeaux-threads"
                "babel-stream"
                "cffi-dirent"
-               #+linux "cffi-epoll"
+               #+linux1 "cffi-epoll"
                "cffi-socket"
                "cffi-stat"
                "cl-debug"
@@ -33,4 +33,4 @@
    (:file "thot" :depends-on ("mime"))
    (:file "thot-select" :depends-on ("thot"))
    (:file "thot-threaded" :depends-on ("thot"))
-   #+linux (:file "thot-epoll" :depends-on ("thot"))))
+   #+linux1 (:file "thot-epoll" :depends-on ("thot"))))

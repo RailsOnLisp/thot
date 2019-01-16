@@ -143,7 +143,9 @@
          (reply-stream (babel-output-stream
                         (multi-buffered-output-stream
                          (unistd-output-stream fd))))
-         (request (make-instance 'request :stream request-stream))
+         (request (make-instance 'request :stream request-stream
+                                 :remote-addr (socket:sockaddr-to-string
+                                               addr)))
          (reply (make-instance 'reply :stream reply-stream))
          (reader-cont (request-reader request reply)))
     (make-instance 'worker

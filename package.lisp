@@ -37,9 +37,14 @@
    #:*disable-threads*
    #:*reply*
    #:*request*
+   #:*url-handlers*
    #:configure-threads
    #:content
+   #:directory
+   #:directory-handler
    #:end-headers
+   #:file
+   #:file-handler
    #:header
    #:maybe-configure-epoll
    #:msg
@@ -49,12 +54,16 @@
    #:reply-headers
    #:reply-headers-sent
    #:reply-status
+   #:reply-stream
    #:request
+   #:request-data
    #:request-header
    #:request-headers
    #:request-http-version
    #:request-method
+   #:request-remote-addr
    #:request-socket
+   #:request-uri
    #:request-url
    #:start
    #:start-threaded

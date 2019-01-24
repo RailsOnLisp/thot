@@ -200,6 +200,7 @@
  the return value of CONT, which should be either :
   :KEEP-ALIVE if the connection is to be kept alive for next request, or
   NIL if the request stream is to be closed after reply."
+  (declare (optimize (speed 3) (safety 0) (debug 0)))
   (let ((stream (request-stream request))
         (buffer (string-output-stream))
         (name "")

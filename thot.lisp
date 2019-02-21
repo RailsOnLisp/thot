@@ -273,12 +273,16 @@
                  (request-handler request reply)))
            (data (char)
                  (stream-write buffer char)
-                 (cond ((= 0 (decf length))
-                        (setf (request-data% request) (get-buffer))
-                        (request-handler request reply))
-                       (t
-                        (data)))))
-        #'method))))
+                 (let* ((char-string (make-string
+                                      1 :initial-element char))
+                        (char-length (trivial-utf-8:utf-8-byte-length
+                                      char-string)))
+                   (cond ((= 0 (decf length char-length))
+                          (setf (request-data% request) (get-buffer))
+                          (request-handler request reply))
+                         (t
+                          (data))))))
+           #'method))))
 
 ;;  Reply
 

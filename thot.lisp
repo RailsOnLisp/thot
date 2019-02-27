@@ -355,7 +355,8 @@
            (when (endp (rest headers))
              (setf (rest headers) (list line))
              (return))
-           (pop headers)))))
+           (pop headers)))
+    line))
 
 (defun end-headers ()
   (unless (reply-headers-sent)

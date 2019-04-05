@@ -23,6 +23,7 @@
    :bordeaux-threads
    :cffi
    :cffi-errno
+   #+openbsd :cffi-kqueue
    :cffi-stat
    :cl-debug
    :cl-stream

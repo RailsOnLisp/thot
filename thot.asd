@@ -17,7 +17,8 @@
                "bordeaux-threads"
                "babel-stream"
                "cffi-dirent"
-               #+linux1 "cffi-epoll"
+               #+linux "cffi-epoll"
+               #+openbsd "cffi-kqueue"
                "cffi-socket"
                "cffi-stat"
                "cl-debug"
@@ -25,6 +26,7 @@
                "html-entities"
                "rol-uri"
                "str"
+               "trivial-utf-8"
                "unistd-stream")
   :components
   ((:file "package")
@@ -33,4 +35,5 @@
    (:file "thot" :depends-on ("mime"))
    (:file "thot-select" :depends-on ("thot"))
    (:file "thot-threaded" :depends-on ("thot"))
-   #+linux1 (:file "thot-epoll" :depends-on ("thot"))))
+   #+linux (:file "thot-epoll" :depends-on ("thot"))
+   #+openbsd (:file "thot-kqueue" :depends-on ("thot"))))

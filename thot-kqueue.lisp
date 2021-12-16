@@ -190,11 +190,11 @@
       (loop
          (when *stop*
            (return))
-         (with-foreign-objects ((events '(:struct kqueue:kevent) 1000)
+         (with-foreign-objects ((events '(:struct kqueue:kevent) 10000)
                                 (timeout '(:struct kqueue:timespec)))
            (kqueue:seconds-to-timespec timeout 10)
            (let ((n-events (kqueue:kevent kq-fd :events events
-                                          :n-events 1000
+                                          :n-events 10000
                                           :timeout timeout)))
              (declare (type fixnum n-events))
              (dotimes (i n-events)
